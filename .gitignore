@@ -14,3 +14,5 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+bin
+.claude-session
