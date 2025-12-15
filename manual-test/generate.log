@@ -1,0 +1,57 @@
+> Task :quarkus-buf-grpc-generator:compileJava NO-SOURCE
+> Task :quarkus-buf-grpc-generator:compileGroovy
+> Task :quarkus-buf-grpc-generator:pluginDescriptors UP-TO-DATE
+> Task :quarkus-buf-grpc-generator:processResources UP-TO-DATE
+> Task :quarkus-buf-grpc-generator:classes
+> Task :quarkus-buf-grpc-generator:jar
+
+> Task :fetchProtos
+Exporting buf-module from BSR: buf.build/bufbuild/buf
+
+> Task :prepareGenerators
+
+> Task :generateProtos
+Generating code for module: buf-module
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/krickert/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protobuf-java/3.25.0/fd148453f05744419358b57a79702436cd70af6/protobuf-java-3.25.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+
+[Incubating] Problems report is available at: file:///home/krickert/IdeaProjects/pipestream-platform/quarkus-buf-grpc-generator/manual-test/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 2s
+7 actionable tasks: 5 executed, 2 up-to-date

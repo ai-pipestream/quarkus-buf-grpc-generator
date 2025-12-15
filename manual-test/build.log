@@ -1,0 +1,20 @@
+> Task :quarkus-buf-grpc-generator:compileJava NO-SOURCE
+> Task :quarkus-buf-grpc-generator:compileGroovy
+> Task :quarkus-buf-grpc-generator:pluginDescriptors UP-TO-DATE
+> Task :quarkus-buf-grpc-generator:processResources UP-TO-DATE
+> Task :quarkus-buf-grpc-generator:classes
+> Task :quarkus-buf-grpc-generator:jar
+
+> Task :fetchProtos
+Exporting buf-module from BSR: buf.build/bufbuild/buf
+
+[Incubating] Problems report is available at: file:///home/krickert/IdeaProjects/pipestream-platform/quarkus-buf-grpc-generator/manual-test/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1s
+5 actionable tasks: 3 executed, 2 up-to-date
