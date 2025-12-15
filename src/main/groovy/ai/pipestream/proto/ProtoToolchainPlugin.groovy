@@ -232,5 +232,15 @@ class ProtoToolchainPlugin implements Plugin<Project> {
                 project.tasks.findByName("sourcesJar")?.dependsOn(generateTask)
             }
         }
+
+        // Automatically disable Quarkus gRPC codegen when Quarkus plugin is detected
+        // This prevents duplicate class errors since this plugin handles code generation
+        project.plugins.withId("io.quarkus") {
+            project.logger.lifecycle("Quarkus plugin detected - disabling Quarkus gRPC codegen (proto-toolchain handles code generation)")
+            project.extensions.findByName("quarkus")?.with { quarkusExt ->
+                // Access quarkusBuildProperties and set the property
+                quarkusExt.quarkusBuildProperties.put("quarkus.grpc.codegen.enabled", "false")
+            }
+        }
     }
 }

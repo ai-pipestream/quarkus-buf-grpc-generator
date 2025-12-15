@@ -14,12 +14,18 @@ import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
 
 import javax.inject.Inject
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * Builds protobuf descriptor files using buf build.
  *
  * This task creates a FileDescriptorSet (.desc file) that can be used
  * for reflection, dynamic message handling, or documentation generation.
+ *
+ * For multi-module projects, this task creates a flat directory containing
+ * all unique proto files (deduplicated by path), then builds a single
+ * combined descriptor that includes all services and messages.
  */
 abstract class BuildDescriptorsTask extends DefaultTask {
 
@@ -72,30 +78,61 @@ abstract class BuildDescriptorsTask extends DefaultTask {
 
         logger.lifecycle("Building descriptors for ${moduleDirs.size()} module(s)")
 
-        // For each module, we build descriptors and merge them
-        // If there's only one module, we can build directly
+        // For single module, build directly
         if (moduleDirs.size() == 1) {
             this.buildDescriptor(moduleDirs[0], descriptorFile)
         } else {
-            // Multiple modules - build each and merge
-            def tempDescriptors = []
-            moduleDirs.eachWithIndex { moduleDir, idx ->
-                def tempFile = new File(descriptorFile.parentFile, "temp_${idx}.desc")
-                this.buildDescriptor(moduleDir, tempFile)
-                tempDescriptors << tempFile
+            // Multiple modules - create a flat directory with all unique protos
+            def flatDir = new File(descriptorFile.parentFile, "flat-protos")
+            if (flatDir.exists()) {
+                flatDir.deleteDir()
+            }
+            flatDir.mkdirs()
+
+            // Copy all proto files from all modules to flat directory
+            // Files are deduplicated by their relative path (later modules overwrite earlier ones)
+            def protoCount = 0
+            moduleDirs.each { moduleDir ->
+                copyProtosToFlat(moduleDir, flatDir)
             }
 
-            // Merge all descriptors into one
-            // For simplicity, we'll just use the last one for now
-            // A proper implementation would merge FileDescriptorSets
-            // For now, build from the first module that has protos
-            if (tempDescriptors) {
-                tempDescriptors[0].renameTo(descriptorFile)
-                tempDescriptors.drop(1).each { it.delete() }
+            // Count proto files
+            flatDir.eachFileRecurse { file ->
+                if (file.name.endsWith('.proto')) {
+                    protoCount++
+                }
             }
+            logger.lifecycle("Created flat directory with ${protoCount} unique proto files")
+
+            // Build combined descriptor from flat directory
+            this.buildDescriptor(flatDir, descriptorFile)
+
+            // Clean up flat directory
+            flatDir.deleteDir()
         }
 
         logger.lifecycle("Built descriptor file: ${descriptorFile}")
+    }
+
+    /**
+     * Recursively copies all proto files from sourceDir to targetDir,
+     * preserving directory structure. Files with the same relative path
+     * are deduplicated (later copies overwrite earlier ones).
+     */
+    protected void copyProtosToFlat(File sourceDir, File targetDir) {
+        sourceDir.eachFileRecurse { file ->
+            if (file.isFile()) {
+                // Calculate relative path from sourceDir
+                def relativePath = sourceDir.toPath().relativize(file.toPath()).toString()
+                def targetFile = new File(targetDir, relativePath)
+
+                // Create parent directories if needed
+                targetFile.parentFile.mkdirs()
+
+                // Copy file (overwrites if exists - deduplication)
+                Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
     }
 
     /**
@@ -110,7 +147,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
     }
 
     protected void buildDescriptor(File moduleDir, File outputFile) {
-        logger.lifecycle("Building descriptor for module: ${moduleDir.name}")
+        logger.lifecycle("Building descriptor for: ${moduleDir.name}")
 
         def bufBinary = resolveBufBinary()
         logger.info("Using buf binary: ${bufBinary.absolutePath}")
@@ -123,7 +160,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
 
         if (result.exitValue != 0) {
             throw new GradleException(
-                "buf build failed for module '${moduleDir.name}'\n" +
+                "buf build failed for '${moduleDir.name}'\n" +
                 "Exit code: ${result.exitValue}\n" +
                 "Check that proto files are valid."
             )
