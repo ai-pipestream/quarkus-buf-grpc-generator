@@ -4,6 +4,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'pl.allegro.tech.build.axion-release' version '1.21.1'
+    id 'com.gradleup.nmcp' version '1.3.0'
 }
 
 // Axion-release configuration
@@ -117,5 +118,16 @@ signing {
     if (signingKey && signingPassword) {
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign publishing.publications
+    }
+}
+
+// Maven Central publishing via nmcp
+nmcp {
+    publishAllProjectsProbablyBreakingProjectIsolation()
+
+    centralPortal {
+        username = findProperty('mavenCentralUsername') ?: System.getenv('MAVEN_CENTRAL_USERNAME')
+        password = findProperty('mavenCentralPassword') ?: System.getenv('MAVEN_CENTRAL_PASSWORD')
+        publishingType = "AUTOMATIC"
     }
 }

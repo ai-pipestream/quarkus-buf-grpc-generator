@@ -44,10 +44,16 @@ jobs:
       - name: Create Release Tag
         run: ./gradlew createRelease -Prelease.incrementer=${{ inputs.incrementer }} -Prelease.disableChecks
 
-      - name: Publish to GitHub Packages
+      - name: Publish to Maven Central and GitHub Packages
         env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+        run: |
+          ./gradlew publishAllPublicationsToCentralPortal
+          ./gradlew publishAllPublicationsToGitHubPackagesRepository
 
       - name: Push Release Tag
         run: |
