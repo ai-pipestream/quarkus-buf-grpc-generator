@@ -3,9 +3,15 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (leave empty for auto)'
-        required: false
+      incrementer:
+        description: 'Version increment type'
+        required: true
+        default: 'incrementPatch'
+        type: choice
+        options:
+          - incrementPatch
+          - incrementMinor
+          - incrementMajor
 
 jobs:
   release:
@@ -29,23 +35,28 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build and Test
         run: ./gradlew build
 
-      - name: Release
+      - name: Create Release Tag
+        run: ./gradlew createRelease -Prelease.incrementer=${{ inputs.incrementer }} -Prelease.disableChecks
+
+      - name: Publish to GitHub Packages
         env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+
+      - name: Push Release Tag
         run: |
-          ./gradlew release publishAllPublicationsToGitHubPackagesRepository
+          git push origin main
+          git push --tags
 
       - name: Get version
         id: version
-        run: echo "version=$(./gradlew -q currentVersion)" >> $GITHUB_OUTPUT
+        run: echo "version=$(./gradlew -q currentVersion | tail -1)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
