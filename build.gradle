@@ -123,11 +123,9 @@ signing {
 
 // Maven Central publishing via nmcp
 nmcp {
-    publishAllProjectsProbablyBreakingProjectIsolation()
-
-    centralPortal {
-        username = findProperty('mavenCentralUsername') ?: System.getenv('MAVEN_CENTRAL_USERNAME')
-        password = findProperty('mavenCentralPassword') ?: System.getenv('MAVEN_CENTRAL_PASSWORD')
+    publishAllPublicationsToCentralPortal {
+        username = providers.environmentVariable("MAVEN_CENTRAL_USERNAME")
+        password = providers.environmentVariable("MAVEN_CENTRAL_PASSWORD")
         publishingType = "AUTOMATIC"
     }
 }
