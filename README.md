@@ -1,9 +1,10 @@
 # Pipestream Proto Toolchain
 
+[![Maven Central](https://img.shields.io/maven-central/v/ai.pipestream/proto-toolchain?label=Maven%20Central)](https://central.sonatype.com/artifact/ai.pipestream/proto-toolchain)
+[![GitHub Release](https://img.shields.io/github/v/release/ai-pipestream/quarkus-buf-grpc-generator?label=GitHub%20Release)](https://github.com/ai-pipestream/quarkus-buf-grpc-generator/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Gradle Plugin](https://img.shields.io/badge/Gradle-Plugin-blue.svg)](https://plugins.gradle.org/)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange.svg)](https://openjdk.org/)
-[![Build](https://github.com/ai-pipestream/pipestream-platform/actions/workflows/test.yml/badge.svg)](https://github.com/ai-pipestream/pipestream-platform/actions/workflows/test.yml)
+[![Build](https://github.com/ai-pipestream/quarkus-buf-grpc-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/ai-pipestream/quarkus-buf-grpc-generator/actions/workflows/ci.yml)
 
 A Gradle plugin for streamlined Protocol Buffer code generation with **100% local execution**. Fetch protos from BSR or Git, generate Java/gRPC/Mutiny stubs—all without uploading data to external servers.
 
@@ -21,12 +22,12 @@ A Gradle plugin for streamlined Protocol Buffer code generation with **100% loca
 
 ## Quick Start
 
-Add to your `build.gradle`:
+Add to your `build.gradle` (check badge above for latest version):
 
 ```groovy
 plugins {
     id 'java'
-    id 'ai.pipestream.proto-toolchain' version '1.0.0'
+    id 'ai.pipestream.proto-toolchain' version '0.7.1'  // See badge for latest
 }
 
 repositories {
@@ -69,8 +70,8 @@ Generated sources appear in `build/generated/source/proto/main/java/`.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ai-pipestream/pipestream-platform.git
-cd pipestream-platform/quarkus-buf-grpc-generator
+git clone https://github.com/ai-pipestream/quarkus-buf-grpc-generator.git
+cd quarkus-buf-grpc-generator
 
 # Build the plugin
 ./gradlew build
@@ -84,18 +85,22 @@ cd pipestream-platform/quarkus-buf-grpc-generator
 
 ### Using Local Build
 
-After `publishToMavenLocal`, use in your project:
+After `publishToMavenLocal`, add `mavenLocal()` to your plugin repositories in `settings.gradle`:
 
 ```groovy
-buildscript {
+pluginManagement {
     repositories {
         mavenLocal()
-        mavenCentral()
+        gradlePluginPortal()
     }
 }
+```
 
+Then use the SNAPSHOT version in your `build.gradle`:
+
+```groovy
 plugins {
-    id 'ai.pipestream.proto-toolchain' version '1.0.0-SNAPSHOT'
+    id 'ai.pipestream.proto-toolchain' version '0.7.2-SNAPSHOT'
 }
 ```
 
@@ -137,7 +142,7 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 - **Website**: [https://pipestream.ai](https://pipestream.ai)
 - **GitHub Organization**: [https://github.com/ai-pipestream](https://github.com/ai-pipestream)
-- **Bug Reports**: [GitHub Issues](https://github.com/ai-pipestream/pipestream-platform/issues)
+- **Bug Reports**: [GitHub Issues](https://github.com/ai-pipestream/quarkus-buf-grpc-generator/issues)
 
 ---
 
