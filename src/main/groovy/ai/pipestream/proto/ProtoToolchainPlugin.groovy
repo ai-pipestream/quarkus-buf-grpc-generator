@@ -181,7 +181,6 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.dependsOn(buildDescriptorsTask)
 
             task.descriptorFile.set(descriptorPath)
-            task.testResourcesDir.set(extension.testResourcesDir)
             task.testBuildDir.set(extension.testBuildDir)
 
             // Only run if copyDescriptorsToResources is enabled and generateDescriptors is enabled

@@ -259,20 +259,14 @@ class IntegrationTest extends Specification {
         result.task(":buildDescriptors").outcome == TaskOutcome.SUCCESS
         result.task(":copyDescriptorsToResources").outcome == TaskOutcome.SUCCESS
 
-        // Verify descriptor was copied to test resources
-        def testResourcesFile = new File(testProjectDir, 'src/test/resources/grpc/proto.desc')
-        testResourcesFile.exists()
-        testResourcesFile.length() > 0
-
-        // Verify descriptor was copied to test build dir
+        // Verify descriptor was copied to test build dir (only build directory, never source)
         def testBuildFile = new File(testProjectDir, 'build/resources/test/grpc/proto.desc')
         testBuildFile.exists()
         testBuildFile.length() > 0
 
-        // Verify both files are identical to source
+        // Verify file is identical to source
         def sourceDescriptor = new File(testProjectDir, 'build/descriptors/proto.desc')
         sourceDescriptor.exists()
-        testResourcesFile.length() == sourceDescriptor.length()
         testBuildFile.length() == sourceDescriptor.length()
     }
 
@@ -313,8 +307,8 @@ class IntegrationTest extends Specification {
         result.task(":copyDescriptorsToResources").outcome == TaskOutcome.SKIPPED
 
         // Verify descriptor was NOT copied
-        def testResourcesFile = new File(testProjectDir, 'src/test/resources/grpc/proto.desc')
-        !testResourcesFile.exists()
+        def testBuildFile = new File(testProjectDir, 'build/resources/test/grpc/proto.desc')
+        !testBuildFile.exists()
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
@@ -370,8 +364,7 @@ class IntegrationTest extends Specification {
             pipestreamProtos {
                 generateDescriptors = true
                 copyDescriptorsToResources = true
-                testResourcesDir = layout.projectDirectory.dir("src/test/resources/custom/grpc")
-                testBuildDir = layout.buildDirectory.dir("custom/test/grpc")
+                testBuildDir = layout.buildDirectory.dir("resources/test/custom/grpc")
                 modules {
                     register("buf") {
                         bsr = "buf.build/bufbuild/protovalidate"
@@ -391,19 +384,14 @@ class IntegrationTest extends Specification {
         then:
         result.task(":copyDescriptorsToResources").outcome == TaskOutcome.SUCCESS
 
-        // Verify descriptor was copied to custom test resources
-        def customTestResourcesFile = new File(testProjectDir, 'src/test/resources/custom/grpc/proto.desc')
-        customTestResourcesFile.exists()
-        customTestResourcesFile.length() > 0
-
-        // Verify descriptor was copied to custom test build dir
-        def customTestBuildFile = new File(testProjectDir, 'build/custom/test/grpc/proto.desc')
+        // Verify descriptor was copied to custom test build dir (only build directory)
+        def customTestBuildFile = new File(testProjectDir, 'build/resources/test/custom/grpc/proto.desc')
         customTestBuildFile.exists()
         customTestBuildFile.length() > 0
 
-        // Verify default locations were NOT used
-        def defaultTestResourcesFile = new File(testProjectDir, 'src/test/resources/grpc/proto.desc')
-        !defaultTestResourcesFile.exists()
+        // Verify default location was NOT used
+        def defaultTestBuildFile = new File(testProjectDir, 'build/resources/test/grpc/proto.desc')
+        !defaultTestBuildFile.exists()
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
@@ -441,11 +429,109 @@ class IntegrationTest extends Specification {
         then:
         result.task(":buildDescriptors").outcome == TaskOutcome.SUCCESS
         result.task(":copyDescriptorsToResources").outcome == TaskOutcome.SUCCESS
-        result.task(":processTestResources").outcome == TaskOutcome.SUCCESS
+        // processTestResources may be NO_SOURCE if there are no test resources, which is fine
+        result.task(":processTestResources").outcome in [TaskOutcome.SUCCESS, TaskOutcome.NO_SOURCE]
 
         // Verify descriptor was copied (task ran before processTestResources)
-        def testResourcesFile = new File(testProjectDir, 'src/test/resources/grpc/proto.desc')
-        testResourcesFile.exists()
+        def testBuildFile = new File(testProjectDir, 'build/resources/test/grpc/proto.desc')
+        testBuildFile.exists()
+    }
+
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    def "copyDescriptorsToResources uses custom descriptor filename"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                generateDescriptors = true
+                copyDescriptorsToResources = true
+                descriptorPath = layout.buildDirectory.file("descriptors/services.dsc")
+                modules {
+                    register("buf") {
+                        bsr = "buf.build/bufbuild/protovalidate"
+                    }
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('copyDescriptorsToResources', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then:
+        result.task(":buildDescriptors").outcome == TaskOutcome.SUCCESS
+        result.task(":copyDescriptorsToResources").outcome == TaskOutcome.SUCCESS
+
+        // Verify descriptor was copied to test build dir with custom filename (only build directory)
+        def testBuildFile = new File(testProjectDir, 'build/resources/test/grpc/services.dsc')
+        testBuildFile.exists()
+        testBuildFile.length() > 0
+
+        // Verify file is identical to source
+        def sourceDescriptor = new File(testProjectDir, 'build/descriptors/services.dsc')
+        sourceDescriptor.exists()
+        testBuildFile.length() == sourceDescriptor.length()
+    }
+
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    def "copyDescriptorsToResources works with nested directory structure"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                generateDescriptors = true
+                copyDescriptorsToResources = true
+                descriptorPath = layout.buildDirectory.file("descriptors/services.dsc")
+                testBuildDir = layout.buildDirectory.dir("resources/test/wiremock/grpc")
+                modules {
+                    register("buf") {
+                        bsr = "buf.build/bufbuild/protovalidate"
+                    }
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('copyDescriptorsToResources', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then:
+        result.task(":buildDescriptors").outcome == TaskOutcome.SUCCESS
+        result.task(":copyDescriptorsToResources").outcome == TaskOutcome.SUCCESS
+
+        // Verify descriptor was copied to nested test build directory (only build directory)
+        def testBuildFile = new File(testProjectDir, 'build/resources/test/wiremock/grpc/services.dsc')
+        testBuildFile.exists()
+        testBuildFile.length() > 0
+
+        // Verify file is identical to source
+        def sourceDescriptor = new File(testProjectDir, 'build/descriptors/services.dsc')
+        sourceDescriptor.exists()
+        testBuildFile.length() == sourceDescriptor.length()
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)

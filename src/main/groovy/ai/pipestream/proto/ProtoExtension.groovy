@@ -75,9 +75,6 @@ abstract class ProtoExtension {
         getBreakingArgs().convention([])
         getFormatArgs().convention([])
         getCopyDescriptorsToResources().convention(false)
-        getTestResourcesDir().convention(
-            project.layout.projectDirectory.dir("src/test/resources/grpc")
-        )
         getTestBuildDir().convention(
             project.layout.buildDirectory.dir("resources/test/grpc")
         )
@@ -206,27 +203,20 @@ abstract class ProtoExtension {
     /**
      * Whether to copy descriptor files to test resource directories.
      *
-     * <p>When enabled, descriptors are copied to:</p>
-     * <ul>
-     *   <li><code>src/test/resources/grpc/</code> (for test resources)</li>
-     *   <li><code>build/resources/test/grpc/</code> (for test build resources)</li>
-     * </ul>
+     * <p>When enabled, descriptors are copied to: <code>build/resources/test/grpc/</code></p>
+     *
+     * <p>Note: Generated files are only copied to build directories, never to source
+     * directories, following Gradle best practices.</p>
      *
      * <p>Default: <code>false</code></p>
      */
     abstract Property<Boolean> getCopyDescriptorsToResources()
 
     /**
-     * Directory for test resources (source directory approach).
-     *
-     * <p>Default: <code>src/test/resources/grpc</code></p>
-     */
-    abstract DirectoryProperty getTestResourcesDir()
-
-    /**
      * Directory for test build resources (classpath approach).
      *
      * <p>Default: <code>build/resources/test/grpc</code></p>
+     * <p>This is the only output directory - we never copy to source directories.</p>
      */
     abstract DirectoryProperty getTestBuildDir()
 

@@ -13,15 +13,11 @@ import java.nio.file.StandardCopyOption
 /**
  * Copies protobuf descriptor files to test resource directories.
  *
- * <p>This task copies the generated descriptor file to configurable target directories,
- * typically for use in testing frameworks that need descriptors on the classpath
- * or in specific resource locations.</p>
+ * <p>This task copies the generated descriptor file to the test build resources directory,
+ * making it available on the test classpath. Generated files are only copied to build
+ * directories, never to source directories, following Gradle best practices.</p>
  *
- * <p>By default, copies to:</p>
- * <ol>
- *   <li><code>src/test/resources/grpc/</code> (for test resources)</li>
- *   <li><code>build/resources/test/grpc/</code> (for test build resources)</li>
- * </ol>
+ * <p>By default, copies to: <code>build/resources/test/grpc/</code></p>
  *
  * <p>This eliminates the need for manual copy tasks in build.gradle files.</p>
  */
@@ -34,17 +30,10 @@ abstract class CopyDescriptorsToResourcesTask extends DefaultTask {
     abstract RegularFileProperty getDescriptorFile()
 
     /**
-     * Target directory for test resources (source directory approach).
-     *
-     * <p>Default: <code>src/test/resources/grpc</code></p>
-     */
-    @OutputDirectories
-    abstract DirectoryProperty getTestResourcesDir()
-
-    /**
      * Target directory for test build resources (classpath approach).
      *
      * <p>Default: <code>build/resources/test/grpc</code></p>
+     * <p>This is the only output directory - we never copy to source directories.</p>
      */
     @OutputDirectories
     abstract DirectoryProperty getTestBuildDir()
@@ -57,23 +46,12 @@ abstract class CopyDescriptorsToResourcesTask extends DefaultTask {
             return
         }
 
-        def testResourcesDir = getTestResourcesDir().get().asFile
         def testBuildDir = getTestBuildDir().get().asFile
 
-        // Ensure directories exist
-        testResourcesDir.mkdirs()
+        // Ensure directory exists
         testBuildDir.mkdirs()
 
-        // Copy to test resources
-        def testResourcesTarget = new File(testResourcesDir, descriptorFile.name)
-        Files.copy(
-            descriptorFile.toPath(),
-            testResourcesTarget.toPath(),
-            StandardCopyOption.REPLACE_EXISTING
-        )
-        logger.lifecycle("Copied descriptor to test resources: ${testResourcesTarget}")
-
-        // Copy to test build dir
+        // Copy to test build dir (only build directory, never source)
         def testBuildTarget = new File(testBuildDir, descriptorFile.name)
         Files.copy(
             descriptorFile.toPath(),
