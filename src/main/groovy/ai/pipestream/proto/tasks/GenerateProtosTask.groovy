@@ -54,7 +54,7 @@ abstract class GenerateProtosTask extends DefaultTask {
 
     /**
      * Extra arguments to pass to buf generate command.
-     * Example: ['--exclude-path', 'google/']
+     * <p>Example: <code>['--exclude-path', 'google/']</code></p>
      */
     @Input
     @org.gradle.api.tasks.Optional

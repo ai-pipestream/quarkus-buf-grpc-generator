@@ -74,41 +74,57 @@ abstract class ProtoExtension {
         getLintArgs().convention([])
         getBreakingArgs().convention([])
         getFormatArgs().convention([])
+        getCopyDescriptorsToResources().convention(false)
+        getTestResourcesDir().convention(
+            project.layout.projectDirectory.dir("src/test/resources/grpc")
+        )
+        getTestBuildDir().convention(
+            project.layout.buildDirectory.dir("resources/test/grpc")
+        )
     }
 
     /**
-     * Source mode: 'bsr' (default) or 'git'.
-     * Can be overridden via -PprotoSource=git
+     * Source mode: <code>'bsr'</code> (default) or <code>'git'</code>.
+     *
+     * <p>Can be overridden via <code>-PprotoSource=git</code></p>
      */
     abstract Property<String> getSourceMode()
 
     /**
-     * Buf CLI version to use. Default: 1.61.0.
-     * The plugin automatically downloads the appropriate binary for your platform.
+     * Buf CLI version to use.
+     *
+     * <p>Default: <code>1.61.0</code></p>
+     * <p>The plugin automatically downloads the appropriate binary for your platform.</p>
      */
     abstract Property<String> getBufVersion()
 
     /**
-     * Protoc version to use. Default: 4.33.2.
-     * The plugin automatically downloads the appropriate binary for your platform.
+     * Protoc version to use.
+     *
+     * <p>Default: <code>4.33.2</code></p>
+     * <p>The plugin automatically downloads the appropriate binary for your platform.</p>
      */
     abstract Property<String> getProtocVersion()
 
     /**
-     * gRPC Java plugin version to use. Default: 1.77.0.
-     * The plugin automatically downloads the appropriate binary for your platform.
+     * gRPC Java plugin version to use.
+     *
+     * <p>Default: <code>1.77.0</code></p>
+     * <p>The plugin automatically downloads the appropriate binary for your platform.</p>
      */
     abstract Property<String> getGrpcJavaVersion()
 
     /**
      * Optional: Custom path to protoc binary.
-     * If set, the plugin uses this instead of downloading from Maven.
+     *
+     * <p>If set, the plugin uses this instead of downloading from Maven.</p>
      */
     abstract Property<String> getProtocPath()
 
     /**
      * Optional: Custom path to protoc-gen-grpc-java binary.
-     * If set, the plugin uses this instead of downloading from Maven.
+     *
+     * <p>If set, the plugin uses this instead of downloading from Maven.</p>
      */
     abstract Property<String> getGrpcJavaPluginPath()
 
@@ -118,23 +134,30 @@ abstract class ProtoExtension {
     abstract Property<String> getQuarkusGrpcVersion()
 
     /**
-     * Whether to generate Quarkus Mutiny stubs. Default: true.
+     * Whether to generate Quarkus Mutiny stubs.
+     *
+     * <p>Default: <code>true</code></p>
      */
     abstract Property<Boolean> getGenerateMutiny()
 
     /**
-     * Whether to generate standard gRPC stubs. Default: true.
+     * Whether to generate standard gRPC stubs.
+     *
+     * <p>Default: <code>true</code></p>
      */
     abstract Property<Boolean> getGenerateGrpc()
 
     /**
-     * Whether to generate protobuf descriptor files. Default: true.
+     * Whether to generate protobuf descriptor files.
+     *
+     * <p>Default: <code>true</code></p>
      */
     abstract Property<Boolean> getGenerateDescriptors()
 
     /**
      * Path for the generated descriptor file.
-     * Default: build/descriptors/proto.desc
+     *
+     * <p>Default: <code>build/descriptors/proto.desc</code></p>
      */
     abstract RegularFileProperty getDescriptorPath()
 
@@ -150,20 +173,23 @@ abstract class ProtoExtension {
 
     /**
      * Extra arguments to pass to buf generate command.
-     * Example: ['--exclude-path', 'google/']
+     *
+     * <p>Example: <code>['--exclude-path', 'google/']</code></p>
      */
     abstract ListProperty<String> getBufGenerateArgs()
 
     /**
      * Extra arguments to pass to buf lint command.
-     * Example: ['--config', 'buf.yaml']
+     *
+     * <p>Example: <code>['--config', 'buf.yaml']</code></p>
      */
     abstract ListProperty<String> getLintArgs()
 
     /**
      * Reference to compare against for breaking change detection.
-     * Can be a BSR reference, git URL, or local directory.
-     * Example: 'buf.build/pipestreamai/intake' or '../previous-protos'
+     *
+     * <p>Can be a BSR reference, git URL, or local directory.</p>
+     * <p>Example: <code>'buf.build/pipestreamai/intake'</code> or <code>'../previous-protos'</code></p>
      */
     abstract Property<String> getBreakingAgainstRef()
 
@@ -176,6 +202,33 @@ abstract class ProtoExtension {
      * Extra arguments to pass to buf format command.
      */
     abstract ListProperty<String> getFormatArgs()
+
+    /**
+     * Whether to copy descriptor files to test resource directories.
+     *
+     * <p>When enabled, descriptors are copied to:</p>
+     * <ul>
+     *   <li><code>src/test/resources/grpc/</code> (for test resources)</li>
+     *   <li><code>build/resources/test/grpc/</code> (for test build resources)</li>
+     * </ul>
+     *
+     * <p>Default: <code>false</code></p>
+     */
+    abstract Property<Boolean> getCopyDescriptorsToResources()
+
+    /**
+     * Directory for test resources (source directory approach).
+     *
+     * <p>Default: <code>src/test/resources/grpc</code></p>
+     */
+    abstract DirectoryProperty getTestResourcesDir()
+
+    /**
+     * Directory for test build resources (classpath approach).
+     *
+     * <p>Default: <code>build/resources/test/grpc</code></p>
+     */
+    abstract DirectoryProperty getTestBuildDir()
 
     /**
      * Container of proto modules to fetch and generate.

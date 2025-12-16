@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 /**
  * Runs buf lint on exported proto files to check for style and correctness issues.
- *
+ *<p>
  * This task runs after fetchProtos and validates the proto files against
  * buf's lint rules. It can be configured with additional lint arguments.
  */
@@ -36,7 +36,7 @@ abstract class LintProtosTask extends DefaultTask {
 
     /**
      * Additional arguments to pass to buf lint.
-     * Example: ['--config', 'buf.yaml']
+     * <p>Example: <code>['--config', 'buf.yaml']</code></p>
      */
     @Input
     abstract ListProperty<String> getLintArgs()

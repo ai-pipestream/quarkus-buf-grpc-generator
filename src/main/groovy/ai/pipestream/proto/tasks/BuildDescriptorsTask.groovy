@@ -20,18 +20,19 @@ import java.nio.file.StandardCopyOption
 /**
  * Builds protobuf descriptor files using buf build.
  *
- * This task creates a FileDescriptorSet (.desc file) that can be used
- * for reflection, dynamic message handling, or documentation generation.
+ * <p>This task creates a <code>FileDescriptorSet</code> (<code>.desc</code> file) that can be used
+ * for reflection, dynamic message handling, or documentation generation.</p>
  *
- * For multi-module projects, this task creates a flat directory containing
+ * <p>For multi-module projects, this task creates a flat directory containing
  * all unique proto files (deduplicated by path), then builds a single
- * combined descriptor that includes all services and messages.
+ * combined descriptor that includes all services and messages.</p>
  */
 abstract class BuildDescriptorsTask extends DefaultTask {
 
     /**
-     * Directory containing exported proto files (from fetchProtos).
-     * Each subdirectory is a module.
+     * Directory containing exported proto files (from <code>fetchProtos</code>).
+     *
+     * <p>Each subdirectory is a module.</p>
      */
     @InputDirectory
     @SkipWhenEmpty
@@ -66,8 +67,8 @@ abstract class BuildDescriptorsTask extends DefaultTask {
         }
 
         // Collect all module directories
-        def moduleDirs = []
-        exportDir.eachDir { moduleDir ->
+        List<File> moduleDirs = []
+        exportDir.eachDir { File moduleDir ->
             moduleDirs << moduleDir
         }
 
@@ -92,7 +93,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
             // Copy all proto files from all modules to flat directory
             // Files are deduplicated by their relative path (later modules overwrite earlier ones)
             def protoCount = 0
-            moduleDirs.each { moduleDir ->
+            moduleDirs.each { File moduleDir ->
                 copyProtosToFlat(moduleDir, flatDir)
             }
 
@@ -119,7 +120,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
      * preserving directory structure. Files with the same relative path
      * are deduplicated (later copies overwrite earlier ones).
      */
-    protected void copyProtosToFlat(File sourceDir, File targetDir) {
+    protected static void copyProtosToFlat(File sourceDir, File targetDir) {
         sourceDir.eachFileRecurse { file ->
             if (file.isFile()) {
                 // Calculate relative path from sourceDir

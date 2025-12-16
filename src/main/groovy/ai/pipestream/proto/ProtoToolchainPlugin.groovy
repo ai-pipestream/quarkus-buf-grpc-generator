@@ -2,6 +2,7 @@ package ai.pipestream.proto
 
 import ai.pipestream.proto.tasks.BuildDescriptorsTask
 import ai.pipestream.proto.tasks.CheckBreakingTask
+import ai.pipestream.proto.tasks.CopyDescriptorsToResourcesTask
 import ai.pipestream.proto.tasks.FetchProtosTask
 import ai.pipestream.proto.tasks.FormatProtosTask
 import ai.pipestream.proto.tasks.GenerateProtosTask
@@ -65,9 +66,9 @@ class ProtoToolchainPlugin implements Plugin<Project> {
         def descriptorPath = extension.descriptorPath
 
         // Get configurations for tasks
-        def bufConfig = project.configurations.getByName(BinaryResolver.BUF_BINARY_CONFIGURATION_NAME)
-        def protocConfig = project.configurations.getByName(BinaryResolver.PROTOC_CONFIGURATION_NAME)
-        def grpcJavaConfig = project.configurations.getByName(BinaryResolver.GRPC_JAVA_CONFIGURATION_NAME)
+        def bufConfig = project.configurations.named(BinaryResolver.BUF_BINARY_CONFIGURATION_NAME)
+        def protocConfig = project.configurations.named(BinaryResolver.PROTOC_CONFIGURATION_NAME)
+        def grpcJavaConfig = project.configurations.named(BinaryResolver.GRPC_JAVA_CONFIGURATION_NAME)
 
         // Register fetchProtos task
         def fetchTask = project.tasks.register("fetchProtos", FetchProtosTask) { task ->
@@ -147,6 +148,24 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             // Using onlyIf ensures task is SKIPPED (not just disabled) when condition is false
             task.onlyIf {
                 generateDescriptorsProperty.get()
+            }
+        }
+
+        // Register copyDescriptorsToResources task
+        // Capture copyDescriptorsToResources value during configuration phase for configuration cache compatibility
+        def copyDescriptorsToResourcesProperty = extension.copyDescriptorsToResources
+        def copyDescriptorsToResourcesTask = project.tasks.register("copyDescriptorsToResources", CopyDescriptorsToResourcesTask) { task ->
+            task.group = "protobuf"
+            task.description = "Copies descriptor files to test resource directories"
+            task.dependsOn(buildDescriptorsTask)
+
+            task.descriptorFile.set(descriptorPath)
+            task.testResourcesDir.set(extension.testResourcesDir)
+            task.testBuildDir.set(extension.testBuildDir)
+
+            // Only run if copyDescriptorsToResources is enabled and generateDescriptors is enabled
+            task.onlyIf {
+                copyDescriptorsToResourcesProperty.get() && generateDescriptorsProperty.get()
             }
         }
 
@@ -234,7 +253,7 @@ class ProtoToolchainPlugin implements Plugin<Project> {
         }
 
         // Wire into Java compilation if Java plugin is applied
-        project.plugins.withType(JavaPlugin) {
+        project.plugins.withType(JavaPlugin).configureEach {
             // Add generated sources to main source set
             project.extensions.getByType(SourceSetContainer).named("main") { sourceSet ->
                 sourceSet.java.srcDir(outputDir)
@@ -247,9 +266,20 @@ class ProtoToolchainPlugin implements Plugin<Project> {
                 task.dependsOn(buildDescriptorsTask)
             }
 
+            // Wire copyDescriptorsToResources to run before processTestResources
+            project.tasks.named("processTestResources").configure { task ->
+                task.dependsOn(copyDescriptorsToResourcesTask)
+            }
+
             // Also wire to sourcesJar if it exists
             project.afterEvaluate {
-                project.tasks.findByName("sourcesJar")?.dependsOn(generateTask)
+                try {
+                    project.tasks.named("sourcesJar").configure { task ->
+                        task.dependsOn(generateTask)
+                    }
+                } catch (Exception ignored) {
+                    // Task doesn't exist, skip
+                }
             }
         }
 

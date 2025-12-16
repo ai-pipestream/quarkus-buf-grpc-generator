@@ -275,6 +275,7 @@ The `outputDir` is automatically added to your main sourceSet, so IDEs will reco
 | `generateGrpc` | `Boolean` | `true` | Generate standard gRPC stubs |
 | `generateMutiny` | `Boolean` | `true` | Generate Quarkus Mutiny reactive stubs |
 | `generateDescriptors` | `Boolean` | `true` | Generate protobuf descriptor file |
+| `copyDescriptorsToResources` | `Boolean` | `false` | Copy descriptor files to test resource directories |
 
 ### Output Configuration
 
@@ -282,6 +283,8 @@ The `outputDir` is automatically added to your main sourceSet, so IDEs will reco
 |----------|------|---------|-------------|
 | `outputDir` | `Directory` | `build/generated/source/proto/main/java` | Output directory for generated Java sources |
 | `descriptorPath` | `File` | `build/descriptors/proto.desc` | Output path for descriptor file |
+| `testResourcesDir` | `Directory` | `src/test/resources/grpc` | Target directory for test resources (source directory approach) |
+| `testBuildDir` | `Directory` | `build/resources/test/grpc` | Target directory for test build resources (classpath approach) |
 | `bufGenerateArgs` | `List<String>` | `[]` | Extra arguments passed to `buf generate` |
 
 ### Module Configuration
@@ -576,6 +579,34 @@ Creates a FileDescriptorSet for runtime reflection.
 ```
 
 Only runs if `generateDescriptors = true` (the default).
+
+#### `copyDescriptorsToResources`
+
+Copies descriptor files to test resource directories. Useful for testing frameworks that need descriptors on the classpath or in specific resource locations.
+
+- **Group**: `protobuf`
+- **Depends on**: `buildDescriptors`
+- **Inputs**: Generated descriptor file
+- **Outputs**: 
+  - `src/test/resources/grpc/<descriptor-name>` (test resources)
+  - `build/resources/test/grpc/<descriptor-name>` (test build resources)
+
+```bash
+./gradlew copyDescriptorsToResources
+```
+
+**Configuration:**
+```groovy
+pipestreamProtos {
+    generateDescriptors = true
+    copyDescriptorsToResources = true
+    // Optional: customize target directories
+    testResourcesDir = layout.projectDirectory.dir("src/test/resources/wiremock/grpc")
+    testBuildDir = layout.buildDirectory.dir("resources/test/grpc")
+}
+```
+
+Only runs if both `copyDescriptorsToResources = true` and `generateDescriptors = true`.
 
 #### `cleanProtos`
 

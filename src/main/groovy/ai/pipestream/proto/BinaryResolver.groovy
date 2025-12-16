@@ -9,12 +9,14 @@ import org.gradle.api.Project
 /**
  * Resolves and downloads binary tools from Maven Central for protobuf code generation.
  *
- * Downloads platform-specific binaries:
- * - buf CLI: build.buf:buf
- * - protoc: com.google.protobuf:protoc
- * - protoc-gen-grpc-java: io.grpc:protoc-gen-grpc-java
+ * <p>Downloads platform-specific binaries:</p>
+ * <ul>
+ *   <li><code>buf</code> CLI: <code>build.buf:buf</code></li>
+ *   <li><code>protoc</code>: <code>com.google.protobuf:protoc</code></li>
+ *   <li><code>protoc-gen-grpc-java</code>: <code>io.grpc:protoc-gen-grpc-java</code></li>
+ * </ul>
  *
- * All use classifier format: {os}-{arch} (e.g., linux-x86_64, osx-aarch_64)
+ * <p>All use classifier format: <code>{os}-{arch}</code> (e.g., <code>linux-x86_64</code>, <code>osx-aarch_64</code>)</p>
  */
 class BinaryResolver {
 
@@ -40,7 +42,9 @@ class BinaryResolver {
     }
 
     private static void createConfiguration(Project project, String name) {
-        if (!project.configurations.findByName(name)) {
+        try {
+            project.configurations.named(name)
+        } catch (Exception ignored) {
             project.configurations.create(name)
         }
     }
@@ -113,7 +117,7 @@ class BinaryResolver {
     }
 
     private static File resolveExecutable(Project project, String configName) {
-        def config = project.configurations.getByName(configName)
+        def config = project.configurations.named(configName).get()
         def executable = config.singleFile
 
         if (!executable.canExecute()) {

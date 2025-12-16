@@ -21,11 +21,13 @@ import javax.inject.Inject
 /**
  * Prepares code generator plugins and creates buf.gen.yaml configuration.
  *
- * This task:
- * 1. Resolves the Quarkus gRPC protoc plugin JAR from Maven
- * 2. Creates a shell wrapper script (protoc-gen-mutiny) that invokes the Java generator
- * 3. Generates a buf.gen.yaml with absolute paths for all plugins
- * 4. Includes any extra plugins configured by the user
+ * <p>This task:</p>
+ * <ol>
+ *   <li>Resolves the Quarkus gRPC protoc plugin JAR from Maven</li>
+ *   <li>Creates a shell wrapper script (<code>protoc-gen-mutiny</code>) that invokes the Java generator</li>
+ *   <li>Generates a <code>buf.gen.yaml</code> with absolute paths for all plugins</li>
+ *   <li>Includes any extra plugins configured by the user</li>
+ * </ol>
  */
 abstract class PrepareGeneratorsTask extends DefaultTask {
 
@@ -49,14 +51,16 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
      * Output directory for generated Java sources (used in buf.gen.yaml).
-     * Marked @Internal because DirectoryProperty can't be @Input directly.
+     *
+     * <p>Marked <code>@Internal</code> because <code>DirectoryProperty</code> can't be <code>@Input</code> directly.</p>
      */
     @Internal
     abstract DirectoryProperty getOutputDir()
 
     /**
      * The output directory path as a string input for up-to-date checking.
-     * If the output path changes, the task will re-run.
+     *
+     * <p>If the output path changes, the task will re-run.</p>
      */
     @Input
     String getOutputDirPath() {
@@ -77,22 +81,25 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
      * Extra buf plugins to include in generation.
-     * Marked @Internal because the container itself isn't serializable.
+     *
+     * <p>Marked <code>@Internal</code> because the container itself isn't serializable.</p>
      */
     @Internal
     Iterable<BufPlugin> extraPlugins
 
     /**
      * Project directory for resolving relative paths.
-     * Captured during configuration phase for configuration cache compatibility.
+     *
+     * <p>Captured during configuration phase for configuration cache compatibility.</p>
      */
     @Input
     abstract Property<String> getProjectDir()
 
     /**
      * The protoc executable (resolved from Maven Central).
-     * Used for local Java codegen via protoc_builtin.
-     * Ignored if customProtocPath is set.
+     *
+     * <p>Used for local Java codegen via <code>protoc_builtin</code>.</p>
+     * <p>Ignored if <code>customProtocPath</code> is set.</p>
      */
     @InputFiles
     @org.gradle.api.tasks.Optional
@@ -100,8 +107,9 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
      * The protoc-gen-grpc-java executable (resolved from Maven Central).
-     * Used for local gRPC codegen.
-     * Ignored if customGrpcJavaPath is set.
+     *
+     * <p>Used for local gRPC codegen.</p>
+     * <p>Ignored if <code>customGrpcJavaPath</code> is set.</p>
      */
     @InputFiles
     @org.gradle.api.tasks.Optional
@@ -109,7 +117,8 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
      * The Quarkus gRPC Mutiny generator plugin JARs (resolved during configuration phase).
-     * This is set by the plugin during configuration to avoid unsafe resolution at execution time.
+     *
+     * <p>This is set by the plugin during configuration to avoid unsafe resolution at execution time.</p>
      */
     @InputFiles
     @org.gradle.api.tasks.Optional
@@ -117,7 +126,8 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
      * Optional: Custom path to protoc binary.
-     * If set, this path is used instead of downloading from Maven.
+     *
+     * <p>If set, this path is used instead of downloading from Maven.</p>
      */
     @Input
     @org.gradle.api.tasks.Optional
@@ -125,7 +135,8 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
      * Optional: Custom path to protoc-gen-grpc-java binary.
-     * If set, this path is used instead of downloading from Maven.
+     *
+     * <p>If set, this path is used instead of downloading from Maven.</p>
      */
     @Input
     @org.gradle.api.tasks.Optional
@@ -200,7 +211,7 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
     /**
      * Resolves an executable from a file collection and ensures it's executable.
      */
-    private String resolveExecutable(ConfigurableFileCollection fileCollection) {
+    private static String resolveExecutable(ConfigurableFileCollection fileCollection) {
         def executable = fileCollection.singleFile
         if (!executable.canExecute()) {
             executable.setExecutable(true)
@@ -269,11 +280,13 @@ java -cp "${windowsClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator
     /**
      * Generates the buf.gen.yaml configuration file with LOCAL plugins (no BSR uploads).
      *
-     * Uses buf.gen.yaml v2 format with:
-     * - protoc_builtin: java (uses local protoc for Java POJOs)
-     * - local: path/to/protoc-gen-grpc-java (uses local gRPC plugin)
+     * <p>Uses <code>buf.gen.yaml</code> v2 format with:</p>
+     * <ul>
+     *   <li><code>protoc_builtin: java</code> (uses local protoc for Java POJOs)</li>
+     *   <li><code>local: path/to/protoc-gen-grpc-java</code> (uses local gRPC plugin)</li>
+     * </ul>
      *
-     * This ensures NO proto files are ever uploaded to buf.build servers.
+     * <p>This ensures NO proto files are ever uploaded to buf.build servers.</p>
      */
     protected void generateBufGenYaml(File yamlFile, String outputDir, String protocPath,
                                       String grpcJavaPath, boolean generateGrpc,

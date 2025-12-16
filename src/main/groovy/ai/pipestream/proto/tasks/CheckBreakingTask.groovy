@@ -37,16 +37,20 @@ abstract class CheckBreakingTask extends DefaultTask {
 
     /**
      * Reference to compare against. Can be:
-     * - BSR reference: buf.build/org/module
-     * - Git reference: https://github.com/org/repo.git#ref=main
-     * - Local directory: /path/to/previous/protos
+     *
+     * <ul>
+     *   <li>BSR reference: <code>buf.build/org/module</code></li>
+     *   <li>Git reference: <code>https://github.com/org/repo.git#ref=main</code></li>
+     *   <li>Local directory: <code>/path/to/previous/protos</code></li>
+     * </ul>
      */
     @Input
     abstract Property<String> getAgainstRef()
 
     /**
      * Additional arguments to pass to buf breaking.
-     * Example: ['--config', 'buf.yaml']
+     *
+     * <p>Example: <code>['--config', 'buf.yaml']</code></p>
      */
     @Input
     abstract ListProperty<String> getBreakingArgs()
