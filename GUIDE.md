@@ -788,6 +788,24 @@ ls ~/.gradle/caches/modules-2/files-2.1/build.buf/buf/
 
 3. **Check sourceSet** includes the output directory (should be automatic, but verify in build output)
 
+### Configuration Cache Issues
+
+**Symptom**: Build fails with errors like:
+```
+Invocation of 'Task.project' by task ':prepareGenerators' at execution time is unsupported with the configuration cache.
+```
+
+**Cause**: Using an older version of the plugin that isn't configuration cache compatible.
+
+**Solution**: Upgrade to version 0.7.3-SNAPSHOT or later:
+```groovy
+plugins {
+    id 'ai.pipestream.proto-toolchain' version '0.7.3-SNAPSHOT'  // or later
+}
+```
+
+**Note**: The plugin is fully compatible with Gradle 9+ configuration cache starting from version 0.7.3-SNAPSHOT. See [CONFIGURATION_CACHE.md](CONFIGURATION_CACHE.md) for detailed implementation notes.
+
 ---
 
 ## Need Help?

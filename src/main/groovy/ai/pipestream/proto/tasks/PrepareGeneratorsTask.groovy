@@ -3,6 +3,7 @@ package ai.pipestream.proto.tasks
 import ai.pipestream.proto.BufPlugin
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -13,6 +14,9 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.artifacts.ConfigurationContainer
+
+import javax.inject.Inject
 
 /**
  * Prepares code generator plugins and creates buf.gen.yaml configuration.
@@ -79,6 +83,13 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
     Iterable<BufPlugin> extraPlugins
 
     /**
+     * Project directory for resolving relative paths.
+     * Captured during configuration phase for configuration cache compatibility.
+     */
+    @Input
+    abstract Property<String> getProjectDir()
+
+    /**
      * The protoc executable (resolved from Maven Central).
      * Used for local Java codegen via protoc_builtin.
      * Ignored if customProtocPath is set.
@@ -95,6 +106,14 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
     @InputFiles
     @org.gradle.api.tasks.Optional
     abstract ConfigurableFileCollection getGrpcJavaExecutable()
+
+    /**
+     * The Quarkus gRPC Mutiny generator plugin JARs (resolved during configuration phase).
+     * This is set by the plugin during configuration to avoid unsafe resolution at execution time.
+     */
+    @InputFiles
+    @org.gradle.api.tasks.Optional
+    abstract ConfigurableFileCollection getMutinyGeneratorJars()
 
     /**
      * Optional: Custom path to protoc binary.
@@ -198,14 +217,12 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
         def version = getQuarkusGrpcVersion().get()
         logger.lifecycle("Resolving quarkus-grpc-protoc-plugin:${version}")
 
-        // Create a detached configuration to resolve the plugin JAR and its dependencies
-        def config = project.configurations.detachedConfiguration(
-            project.dependencies.create("io.quarkus:quarkus-grpc-protoc-plugin:${version}")
-        )
-
-        def files = config.resolve()
+        // Use pre-resolved files from configuration phase (set by plugin)
+        // This avoids unsafe configuration resolution at execution time
+        def files = getMutinyGeneratorJars().files
         if (files.isEmpty()) {
-            throw new GradleException("Failed to resolve quarkus-grpc-protoc-plugin:${version}")
+            throw new GradleException("Failed to resolve quarkus-grpc-protoc-plugin:${version}. " +
+                    "Ensure the plugin is properly configured.")
         }
 
         // Build classpath strings for both platforms
@@ -304,9 +321,11 @@ java -cp "${windowsClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator
                 }
 
                 // Resolve output path - make it absolute if relative
+                // Use captured project directory for configuration cache compatibility
                 def pluginOut = plugin.out.get()
                 if (!pluginOut.startsWith('/')) {
-                    pluginOut = project.file(pluginOut).absolutePath
+                    def projectDir = new File(getProjectDir().get())
+                    pluginOut = new File(projectDir, pluginOut).absolutePath
                 }
                 yaml.append("    out: ${pluginOut}\n")
 

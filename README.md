@@ -19,6 +19,7 @@ A Gradle plugin for streamlined Protocol Buffer code generation with **100% loca
 - **Hermetic builds** - All binaries downloaded from Maven Central
 - **Quarkus Mutiny support** - Reactive gRPC stubs out of the box
 - **Zero boilerplate** - Declarative DSL replaces manual task wiring
+- **Configuration cache compatible** - Fully compatible with Gradle 9+ configuration cache for faster builds
 
 ## Quick Start
 
@@ -58,6 +59,7 @@ Generated sources appear in `build/generated/source/proto/main/java/`.
 | **[GUIDE.md](GUIDE.md)** | Complete tutorial with examples and configuration reference |
 | **[DESIGN_IDEA.md](DESIGN_IDEA.md)** | Technical architecture and implementation details |
 | **[BEFORE_AFTER_EXAMPLE.md](BEFORE_AFTER_EXAMPLE.md)** | Migration guide showing before/after comparison |
+| **[CONFIGURATION_CACHE.md](CONFIGURATION_CACHE.md)** | Configuration cache compatibility guide and implementation details |
 
 ## Building from Source
 
@@ -121,7 +123,8 @@ quarkus-buf-grpc-generator/
 ├── src/test/groovy/                   # Test suite
 ├── GUIDE.md                           # User guide
 ├── DESIGN_IDEA.md                     # Architecture docs
-└── BEFORE_AFTER_EXAMPLE.md            # Migration guide
+├── BEFORE_AFTER_EXAMPLE.md            # Migration guide
+└── CONFIGURATION_CACHE.md             # Configuration cache compatibility guide
 ```
 
 ## Contributing

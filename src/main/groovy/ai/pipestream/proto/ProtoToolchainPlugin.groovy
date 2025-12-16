@@ -93,12 +93,26 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.pluginDir.set(pluginDir)
             task.bufGenYaml.set(bufGenYaml)
             task.extraPlugins = extension.extraPlugins
+            // Capture project directory during configuration phase for configuration cache compatibility
+            task.projectDir.set(project.layout.projectDirectory.asFile.absolutePath)
             // Pass custom paths if specified by user (takes precedence over Maven download)
             task.customProtocPath.set(extension.protocPath)
             task.customGrpcJavaPath.set(extension.grpcJavaPluginPath)
             // Pass protoc and grpc-java configurations for local generation (used if custom paths not set)
             task.protocExecutable.setFrom(protocConfig)
             task.grpcJavaExecutable.setFrom(grpcJavaConfig)
+        }
+
+        // Pre-resolve Mutiny generator JARs during configuration phase for Gradle 9+ compatibility
+        // This must be done in afterEvaluate when the version is known
+        project.afterEvaluate {
+            def mutinyGeneratorConfig = project.configurations.detachedConfiguration(
+                project.dependencies.create("io.quarkus:quarkus-grpc-protoc-plugin:${extension.quarkusGrpcVersion.get()}")
+            )
+            // Resolve during configuration phase to avoid unsafe resolution at execution time
+            prepareTask.configure { task ->
+                task.mutinyGeneratorJars.setFrom(mutinyGeneratorConfig)
+            }
         }
 
         // Register generateProtos task
@@ -115,6 +129,8 @@ class ProtoToolchainPlugin implements Plugin<Project> {
         }
 
         // Register buildDescriptors task
+        // Capture generateDescriptors value during configuration phase for configuration cache compatibility
+        def shouldGenerateDescriptors = extension.generateDescriptors.getOrElse(true)
         def buildDescriptorsTask = project.tasks.register("buildDescriptors", BuildDescriptorsTask) { task ->
             task.group = "protobuf"
             task.description = "Builds protobuf descriptor files"
@@ -124,10 +140,10 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.descriptorPath.set(descriptorPath)
             task.bufExecutable.setFrom(bufConfig)
 
-            // Only run if generateDescriptors is enabled
-            task.onlyIf {
-                extension.generateDescriptors.get()
-            }
+            // Enable/disable based on generateDescriptors setting
+            // Use captured boolean value to avoid capturing extension (which has project reference)
+            // This is needed for configuration cache compatibility
+            task.enabled = shouldGenerateDescriptors
         }
 
         // Register cleanProtos task
