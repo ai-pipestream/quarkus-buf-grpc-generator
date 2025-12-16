@@ -130,7 +130,8 @@ class ProtoToolchainPlugin implements Plugin<Project> {
 
         // Register buildDescriptors task
         // Capture generateDescriptors value during configuration phase for configuration cache compatibility
-        def shouldGenerateDescriptors = extension.generateDescriptors.getOrElse(true)
+        // We capture the Property itself (not the extension) to avoid serialization issues
+        def generateDescriptorsProperty = extension.generateDescriptors
         def buildDescriptorsTask = project.tasks.register("buildDescriptors", BuildDescriptorsTask) { task ->
             task.group = "protobuf"
             task.description = "Builds protobuf descriptor files"
@@ -140,10 +141,13 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.descriptorPath.set(descriptorPath)
             task.bufExecutable.setFrom(bufConfig)
 
-            // Enable/disable based on generateDescriptors setting
-            // Use captured boolean value to avoid capturing extension (which has project reference)
+            // Only run if generateDescriptors is enabled
+            // Use captured Property directly (not extension) to avoid capturing project reference
             // This is needed for configuration cache compatibility
-            task.enabled = shouldGenerateDescriptors
+            // Using onlyIf ensures task is SKIPPED (not just disabled) when condition is false
+            task.onlyIf {
+                generateDescriptorsProperty.get()
+            }
         }
 
         // Register cleanProtos task
