@@ -5,10 +5,10 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
@@ -19,8 +19,8 @@ import javax.inject.Inject
 /**
  * Fetches proto definitions from BSR or Git using buf export.
  *
- * This task cleans and re-exports all configured modules to ensure
- * a consistent state. Each module is exported to its own subdirectory.
+ * <p>This task cleans and re-exports all configured modules to ensure
+ * a consistent state. Each module is exported to its own subdirectory.</p>
  */
 abstract class FetchProtosTask extends DefaultTask {
 
@@ -43,11 +43,11 @@ abstract class FetchProtosTask extends DefaultTask {
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**
-     * The modules to fetch. Marked @Internal because the container
-     * itself isn't cacheable, but its contents are read at execution time.
+     * Module data captured during configuration phase for configuration cache compatibility.
+     * Each entry is a map with: name, bsr (optional), gitRepo (optional), gitRef, gitSubdir
      */
-    @Internal
-    Iterable<ProtoModule> modules
+    @Input
+    abstract ListProperty<Map<String, String>> getModuleData()
 
     @Inject
     protected abstract ExecOperations getExecOperations()
@@ -56,6 +56,7 @@ abstract class FetchProtosTask extends DefaultTask {
     void fetch() {
         def exportDir = getExportDir().get().asFile
         def mode = getSourceMode().get()
+        def moduleDataList = getModuleData().get()
 
         // Clean export directory for consistent state
         if (exportDir.exists()) {
@@ -64,25 +65,26 @@ abstract class FetchProtosTask extends DefaultTask {
         }
         exportDir.mkdirs()
 
-        if (!modules || !modules.iterator().hasNext()) {
+        if (!moduleDataList || moduleDataList.isEmpty()) {
             logger.warn("No modules configured, nothing to fetch.")
             return
         }
 
-        modules.each { module ->
-            def moduleDir = new File(exportDir, module.name)
+        moduleDataList.each { moduleData ->
+            def moduleName = moduleData['name']
+            def moduleDir = new File(exportDir, moduleName)
             moduleDir.mkdirs()
 
             if (mode == 'bsr') {
-                this.fetchFromBsr(module, moduleDir)
+                this.fetchFromBsr(moduleData, moduleDir)
             } else if (mode == 'git') {
-                this.fetchFromGit(module, moduleDir)
+                this.fetchFromGit(moduleData, moduleDir)
             } else {
                 throw new GradleException("Unknown sourceMode: ${mode}. Use 'bsr' or 'git'.")
             }
         }
 
-        logger.lifecycle("Fetched ${modules.size()} module(s) to ${exportDir}")
+        logger.lifecycle("Fetched ${moduleDataList.size()} module(s) to ${exportDir}")
     }
 
     /**
@@ -96,14 +98,15 @@ abstract class FetchProtosTask extends DefaultTask {
         return executable
     }
 
-    protected void fetchFromBsr(ProtoModule module, File outputDir) {
-        def bsr = module.bsr.getOrNull()
+    protected void fetchFromBsr(Map<String, String> moduleData, File outputDir) {
+        def moduleName = moduleData['name']
+        def bsr = moduleData['bsr']
         if (!bsr) {
-            throw new GradleException("Module '${module.name}' has no BSR path configured. " +
+            throw new GradleException("Module '${moduleName}' has no BSR path configured. " +
                 "Set bsr = 'buf.build/org/module' or use -PprotoSource=git")
         }
 
-        logger.lifecycle("Exporting ${module.name} from BSR: ${bsr}")
+        logger.lifecycle("Exporting ${moduleName} from BSR: ${bsr}")
 
         def bufBinary = resolveBufBinary()
         logger.info("Using buf binary: ${bufBinary.absolutePath}")
@@ -115,22 +118,23 @@ abstract class FetchProtosTask extends DefaultTask {
 
         if (result.exitValue != 0) {
             throw new GradleException(
-                "Failed to export '${module.name}' from BSR: ${bsr}\n" +
+                "Failed to export '${moduleName}' from BSR: ${bsr}\n" +
                 "Exit code: ${result.exitValue}\n" +
                 "Ensure you're authenticated to BSR (run 'buf registry login')."
             )
         }
     }
 
-    protected void fetchFromGit(ProtoModule module, File outputDir) {
-        def gitRepo = module.gitRepo.getOrNull()
+    protected void fetchFromGit(Map<String, String> moduleData, File outputDir) {
+        def moduleName = moduleData['name']
+        def gitRepo = moduleData['gitRepo']
         if (!gitRepo) {
-            throw new GradleException("Module '${module.name}' has no Git repository configured. " +
+            throw new GradleException("Module '${moduleName}' has no Git repository configured. " +
                 "Set gitRepo = 'https://github.com/org/repo.git' or use -PprotoSource=bsr")
         }
 
-        def gitRef = module.gitRef.get()
-        def gitSubdir = module.gitSubdir.get()
+        def gitRef = moduleData['gitRef'] ?: 'main'
+        def gitSubdir = moduleData['gitSubdir'] ?: '.'
 
         // buf export can handle git URLs directly with ref and subdir
         // Format: <repo>#ref=<ref>,subdir=<subdir>
@@ -139,7 +143,7 @@ abstract class FetchProtosTask extends DefaultTask {
             bufGitUrl += ",subdir=${gitSubdir}"
         }
 
-        logger.lifecycle("Exporting ${module.name} from Git: ${gitRepo} (ref=${gitRef}, subdir=${gitSubdir})")
+        logger.lifecycle("Exporting ${moduleName} from Git: ${gitRepo} (ref=${gitRef}, subdir=${gitSubdir})")
 
         def bufBinary = resolveBufBinary()
         logger.info("Using buf binary: ${bufBinary.absolutePath}")
@@ -151,7 +155,7 @@ abstract class FetchProtosTask extends DefaultTask {
 
         if (result.exitValue != 0) {
             throw new GradleException(
-                "Failed to export '${module.name}' from Git: ${gitRepo}\n" +
+                "Failed to export '${moduleName}' from Git: ${gitRepo}\n" +
                 "Exit code: ${result.exitValue}\n" +
                 "Ensure you have access to the repository."
             )

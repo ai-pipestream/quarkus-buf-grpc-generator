@@ -77,8 +77,29 @@ class ProtoToolchainPlugin implements Plugin<Project> {
 
             task.sourceMode.set(extension.sourceMode)
             task.exportDir.set(exportDir)
-            task.modules = extension.modules
             task.bufExecutable.setFrom(bufConfig)
+        }
+        
+        // Capture module data during afterEvaluate for configuration cache compatibility
+        // This ensures all module properties are fully configured before capture
+        // We extract data into a plain list to avoid capturing the container
+        project.afterEvaluate {
+            List<Map<String, String>> moduleDataList = []
+            // Use findAll to get a snapshot of modules without capturing the container
+            def modulesSnapshot = extension.modules.findAll { true }
+            modulesSnapshot.each { ProtoModule module ->
+                // Extract all data immediately into a plain map
+                Map<String, String> moduleData = new LinkedHashMap<>()
+                moduleData['name'] = module.name
+                moduleData['bsr'] = module.bsr.getOrNull()
+                moduleData['gitRepo'] = module.gitRepo.getOrNull()
+                moduleData['gitRef'] = module.gitRef.getOrElse('main')
+                moduleData['gitSubdir'] = module.gitSubdir.getOrElse('.')
+                moduleDataList.add(moduleData)
+            }
+            fetchTask.configure { task ->
+                task.moduleData.set(moduleDataList)
+            }
         }
 
         // Register prepareGenerators task
