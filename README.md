@@ -14,7 +14,7 @@ A Gradle plugin for streamlined Protocol Buffer code generation with **100% loca
 
 ## Features
 
-- **Dual-source resolution** - Seamlessly switch between BSR and Git
+- **Three source modes** - BSR (default), Git (per-module), or Git Workspace (monorepo with cross-module imports)
 - **100% local generation** - No proto files uploaded to external servers
 - **Hermetic builds** - All binaries downloaded from Maven Central
 - **Quarkus Mutiny support** - Reactive gRPC stubs out of the box
@@ -57,8 +57,8 @@ Generated sources appear in `build/generated/source/proto/main/java/`.
 | Document | Description |
 |----------|-------------|
 | **[GUIDE.md](GUIDE.md)** | Complete tutorial with examples and configuration reference |
-| **[DESIGN_IDEA.md](DESIGN_IDEA.md)** | Technical architecture and implementation details |
-| **[BEFORE_AFTER_EXAMPLE.md](BEFORE_AFTER_EXAMPLE.md)** | Migration guide showing before/after comparison |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Technical architecture and implementation details |
+| **[BEFORE_AFTER_EXAMPLE.md](BEFORE_AFTER_EXAMPLE.md)** | Migration guide showing before/after comparison (temporary during migration) |
 | **[CONFIGURATION_CACHE.md](CONFIGURATION_CACHE.md)** | Configuration cache compatibility guide and implementation details |
 
 ## Building from Source
@@ -122,8 +122,8 @@ quarkus-buf-grpc-generator/
 │       └── BuildDescriptorsTask.groovy # Descriptor generation
 ├── src/test/groovy/                   # Test suite
 ├── GUIDE.md                           # User guide
-├── DESIGN_IDEA.md                     # Architecture docs
-├── BEFORE_AFTER_EXAMPLE.md            # Migration guide
+├── ARCHITECTURE.md                    # Architecture docs
+├── BEFORE_AFTER_EXAMPLE.md            # Migration guide (temporary)
 └── CONFIGURATION_CACHE.md             # Configuration cache compatibility guide
 ```
 

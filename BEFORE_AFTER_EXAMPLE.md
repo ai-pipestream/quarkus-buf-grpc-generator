@@ -1,5 +1,7 @@
 # Before & After: Proto Toolchain Plugin
 
+> **Note**: This migration guide is maintained during the active migration period. Once all repositories have migrated to the plugin, this content will be consolidated into [GUIDE.md](GUIDE.md) and this document will be archived or removed.
+
 This document shows how the `ai.pipestream.proto-toolchain` plugin simplifies protobuf configuration using `connector-intake-service` as a real-world example.
 
 ---
@@ -303,7 +305,7 @@ pipestreamProtos {
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `sourceMode` | `'bsr'` | Proto source: `'bsr'` or `'git'` |
+| `sourceMode` | `'bsr'` | Proto source: `'bsr'`, `'git'`, or `'git-proto-workspace'` |
 | `bufVersion` | `'1.61.0'` | Buf CLI version |
 | `protocVersion` | `'4.33.2'` | Protoc compiler version |
 | `grpcJavaVersion` | `'1.77.0'` | gRPC Java plugin version |

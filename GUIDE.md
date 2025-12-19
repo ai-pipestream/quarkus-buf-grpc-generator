@@ -176,7 +176,46 @@ Now you can build from either source:
 
 The generated code is identical regardless of source. This lets you develop against BSR (fast, cached) while giving restricted clients a fully self-contained build.
 
-### 3.4 Disabling Mutiny or gRPC Generation
+### 3.4 Git Workspace Mode for Monorepos
+
+For monorepos with cross-module imports, use workspace mode:
+
+```groovy
+pipestreamProtos {
+    sourceMode = 'git-proto-workspace'
+    
+    // Extension-level Git configuration (required)
+    gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+    gitRef = "main"  // or tag/commit for reproducibility
+    
+    modules {
+        // Just register module names - toolchain handles the rest
+        register("opensearch")
+        register("schemamanager")  // Can import types from opensearch
+        register("config")
+        register("common")         // Shared types used by other modules
+    }
+}
+```
+
+**How it works:**
+1. The plugin clones the entire repository once (preserves workspace structure)
+2. Uses `buf generate` with `--path` filters to generate only registered modules
+3. Cross-module imports are automatically resolved (all proto files present in workspace)
+4. No manual dependency specification needed—buf detects dependencies from the workspace
+
+**Benefits:**
+- Supports cross-module imports without manual dependency management
+- Single repository checkout (more efficient than multiple per-module exports)
+- Works with any buf workspace configuration (fully generic)
+- Only generates code for explicitly registered modules
+
+**When to use:**
+- Your proto repository uses buf workspaces (has a root `buf.yaml`)
+- Modules import types from other modules in the same repository
+- You want clean module separation while supporting dependencies
+
+### 3.5 Disabling Mutiny or gRPC Generation
 
 Not every project needs all stub types. Disable what you don't need:
 
@@ -196,7 +235,7 @@ pipestreamProtos {
 
 This is useful for shared model libraries that don't need service stubs, or for projects using a different reactive framework.
 
-### 3.5 Adding Extra Buf Plugins
+### 3.6 Adding Extra Buf Plugins
 
 Extend generation with additional Buf plugins. Here's an example adding documentation generation:
 
@@ -220,7 +259,7 @@ pipestreamProtos {
 
 Extra plugins are appended to the generated `buf.gen.yaml`. Note that these may use remote execution on BSR—check the plugin's documentation if data privacy is a concern.
 
-### 3.6 Custom Output Directories
+### 3.7 Custom Output Directories
 
 Override the default output locations:
 
@@ -250,7 +289,7 @@ The `outputDir` is automatically added to your main sourceSet, so IDEs will reco
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `sourceMode` | `String` | `'bsr'` | Proto source mode: `'bsr'` or `'git'`. Can be overridden with `-PprotoSource=git` |
+| `sourceMode` | `String` | `'bsr'` | Proto source mode: `'bsr'`, `'git'`, or `'git-proto-workspace'`. Can be overridden with `-PprotoSource=git` or `-PprotoSource=git-proto-workspace` |
 
 ### Version Configuration
 
@@ -294,9 +333,9 @@ Each module registered in the `modules { }` block supports:
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
 | `bsr` | `String` | For BSR mode | BSR module reference (e.g., `buf.build/org/module`) |
-| `gitRepo` | `String` | For Git mode | Git repository URL |
-| `gitRef` | `String` | For Git mode | Git ref (branch, tag, or commit SHA) |
-| `gitSubdir` | `String` | No | Subdirectory within Git repo (for monorepos) |
+| `gitRepo` | `String` | For Git/Workspace mode | Git repository URL (per-module for Git mode, extension-level for workspace mode) |
+| `gitRef` | `String` | For Git/Workspace mode | Git ref (branch, tag, or commit SHA) |
+| `gitSubdir` | `String` | No | Subdirectory within Git repo (for per-module Git mode, not used in workspace mode) |
 
 ### Extra Plugin Configuration
 
@@ -310,9 +349,9 @@ Each plugin registered in the `extraPlugins { }` block supports:
 
 ---
 
-## 5. Proto Sources: BSR vs Git
+## 5. Proto Sources: BSR, Git, and Git Workspace
 
-The plugin supports two proto sources, selectable at build time. Both produce identical generated code—the difference is where the `.proto` files come from.
+The plugin supports three proto source modes, selectable at build time. All produce identical generated code—the difference is where the `.proto` files come from and how they're organized.
 
 ### When to Use Each
 
@@ -320,7 +359,8 @@ The plugin supports two proto sources, selectable at build time. Both produce id
 |----------|-------------------|
 | Day-to-day development | BSR (faster, cached) |
 | CI/CD pipelines with BSR access | BSR |
-| Restricted client environments | Git |
+| Restricted client environments | Git (per-module) |
+| Monorepos with cross-module imports | Git Workspace (`git-proto-workspace`) |
 | Air-gapped networks | Git (with internal mirror) |
 | Offline development | Git (after initial clone) |
 
@@ -364,6 +404,64 @@ sequenceDiagram
 
 The Buf CLI handles Git authentication using your system's credentials (SSH keys, credential helpers, etc.).
 
+### How Git Workspace Mode Works
+
+When `sourceMode = 'git-proto-workspace'` (recommended for monorepos):
+
+```mermaid
+sequenceDiagram
+    participant Gradle
+    participant Git as Git Repository
+    participant Buf as Buf CLI
+    participant Workspace as Full Workspace Checkout
+    participant Local as build/protos/export/
+
+    Gradle->>Git: git clone (full repository)
+    Git-->>Workspace: Complete repository structure
+    Note over Workspace: Includes buf.yaml and all modules
+    Gradle->>Buf: buf generate (with --path filters)
+    Buf->>Workspace: Resolve cross-module imports
+    Buf->>Local: Generate only registered modules
+    Note over Local: Cross-module imports resolved
+```
+
+**Key differences from per-module Git mode:**
+- Exports the **entire repository** once (preserves workspace structure)
+- Uses `buf generate` with `--path` filters to target only registered modules
+- **Automatically resolves cross-module imports** (all proto files present in workspace)
+- No need to manually specify dependencies—buf detects them from the workspace
+
+**Configuration example:**
+
+```groovy
+pipestreamProtos {
+    sourceMode = 'git-proto-workspace'
+    
+    // Extension-level Git config (required for workspace mode)
+    gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+    gitRef = "main"  // or tag/commit
+    
+    modules {
+        // Just register module names - toolchain filters from workspace
+        register("opensearch")
+        register("schemamanager")  // Can import from opensearch
+        register("config")
+    }
+}
+```
+
+**When to use workspace mode:**
+- Your proto repository uses buf workspaces (has a root `buf.yaml`)
+- Modules import types from other modules in the same repository
+- You want to maintain clean module separation while supporting cross-module dependencies
+- You're working with a monorepo structure
+
+**Benefits:**
+- Single repository checkout (faster than multiple per-module exports)
+- Automatic dependency resolution (no manual dependency graph calculation)
+- Works with any buf workspace configuration (fully generic)
+- Only generates code for explicitly registered modules (efficient)
+
 ### Switching at Build Time
 
 The source mode can be changed without modifying `build.gradle`:
@@ -372,8 +470,11 @@ The source mode can be changed without modifying `build.gradle`:
 # Use BSR (default)
 ./gradlew build
 
-# Use Git
+# Use Git (per-module)
 ./gradlew build -PprotoSource=git
+
+# Use Git Workspace (monorepo)
+./gradlew build -PprotoSource=git-proto-workspace
 ```
 
 This is controlled by the `sourceMode` property, which defaults to checking the Gradle property `protoSource`:
@@ -405,8 +506,10 @@ modules {
 
 **Best practices**:
 - Use release tags (`v2.1.0`) rather than `main` for production builds
-- Set `gitSubdir` for monorepos to avoid exporting unrelated protos
+- For per-module Git mode: Set `gitSubdir` to avoid exporting unrelated protos
+- For workspace mode: Set `gitRepo` and `gitRef` at extension level, modules only need names
 - Keep BSR and Git sources in sync (they should contain the same protos)
+- Use workspace mode when modules have cross-module imports
 
 ---
 

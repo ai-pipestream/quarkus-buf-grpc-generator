@@ -1,4 +1,4 @@
-# **Design Document: Pipestream Proto Toolchain Plugin**
+# **Architecture Document: Pipestream Proto Toolchain Plugin**
 
 ## **1. Executive Summary**
 
@@ -6,7 +6,7 @@ The **Pipestream Proto Toolchain** (ai.pipestream.proto-toolchain) is a bespoke 
 
 It solves four critical problems:
 
-1. **Dual-Source Resolution:** seamlessly switches between **Buf Schema Registry (BSR)** for internal development and **Git Repositories** for restricted client environments, without changing project code.
+1. **Multi-Source Resolution:** seamlessly switches between **Buf Schema Registry (BSR)** for internal development, **Git Repositories** (per-module) for restricted environments, and **Git Workspace** mode for monorepos with cross-module imports—all without changing project code.
 2. **100% Local Generation:** All code generation happens locally using Maven-downloaded binaries (protoc, grpc-java). **No proto files are ever uploaded to third-party servers.**
 3. **Reactive Stubs:** Generates Quarkus Mutiny reactive stubs alongside standard gRPC stubs via a dynamically generated wrapper script.
 4. **Hermetic Builds:** Removes the need for developers or CI to manually install buf, protoc, or shell dependencies - everything is downloaded from Maven Central.
@@ -21,12 +21,15 @@ flowchart TD
         direction TB
         Config[Plugin DSL] -->|Source Mode| Switch{Mode?}
         Switch -- "BSR (Default)" --> BufCLI1[Buf CLI]
-        Switch -- "Git (Restricted)" --> BufCLI1
+        Switch -- "Git (Per-Module)" --> BufCLI1
+        Switch -- "Git Workspace" --> GitClone[Git Clone Full Repo]
 
         BSR[(buf.build)] -.->|Pull Module| BufCLI1
         Git[(Git Repo)] -.->|Clone/Checkout| BufCLI1
+        Git -.->|Clone Full| GitClone
 
         BufCLI1 -->|buf export| LocalCache[build/protos/export]
+        GitClone -->|Full Workspace| WorkspaceCache[build/protos/export (workspace)]
     end
 
     subgraph "Phase 2: Configuration (prepareGenerators)"
@@ -67,8 +70,8 @@ plugins {
 pipestreamProtos {
     // ===== Source Configuration =====
 
-    // Global toggle. Can be overridden via CLI: -PprotoSource=git
-    // Values: 'bsr', 'git'
+    // Global toggle. Can be overridden via CLI: -PprotoSource=git or -PprotoSource=git-proto-workspace
+    // Values: 'bsr', 'git', 'git-proto-workspace'
     sourceMode = providers.gradleProperty('protoSource').orElse('bsr')
 
     // ===== Binary Version Configuration =====
@@ -134,6 +137,17 @@ pipestreamProtos {
         }
     }
 
+    // ===== Git Workspace Mode (for monorepos with cross-module imports) =====
+    // sourceMode = 'git-proto-workspace'
+    // gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+    // gitRef = "main"
+    // modules {
+    //     register("opensearch")      // Just name, toolchain filters from workspace
+    //     register("schemamanager")   // Can import from opensearch
+    //     register("config")
+    // }
+    }
+
     // ===== Extra Buf Plugins (Optional) =====
 
     extraPlugins {
@@ -148,16 +162,20 @@ pipestreamProtos {
 
 ## **4. Implementation Details**
 
-### **Phase 1: The Universal Resolver (buf export)**
+### **Phase 1: The Universal Resolver (buf export / git clone)**
 
-We leverage buf export as the universal adapter. It normalizes any source into a flat directory of .proto files.
+We leverage buf export as the universal adapter for BSR and per-module Git sources. For workspace mode, we use git clone to materialize the full workspace.
 
 * **Task:** `fetchProtos`
-* **Mechanism:**
+* **Mechanism (BSR/Per-Module Git):**
     * Iterates over registered modules.
     * Executes `buf export <source> --output <buildDir>/protos/export/<module>`.
     * **Git Optimization:** buf handles git authentication (via local SSH keys/https) and sparse checkouts natively.
-* **Outcome:** A pristine directory of `.proto` files that represents the "Local Source of Truth".
+* **Mechanism (Git Workspace):**
+    * Clones the entire repository into `exportDir` (preserves workspace structure).
+    * Uses `git ls-files` to discover proto files within registered module paths.
+    * The `exportDir` becomes the workspace root for `buf generate`.
+* **Outcome:** A pristine directory of `.proto` files that represents the "Local Source of Truth" (per-module exports) or a full workspace (workspace mode).
 
 ### **Phase 2: The "Bridge" (Connecting Quarkus to Buf)**
 
@@ -182,10 +200,11 @@ This phase downloads binaries and creates the configuration for local code gener
 
 ### **Phase 3: The Engine (buf generate)**
 
-We execute a single buf generate command that acts as the orchestrator for all outputs.
+We execute buf generate commands that act as the orchestrator for all outputs. For workspace mode, we run a single `buf generate` with `--path` filters.
 
 * **Task:** `generateProtos`
-* **Input:** The `build/protos/export` directory.
+* **Input (BSR/Per-Module Git):** The `build/protos/export` directory (per-module subdirectories).
+* **Input (Git Workspace):** The `build/protos/export` directory (full workspace checkout).
 * **Configuration:** The generated buf.gen.yaml (v2 format with LOCAL plugins):
 
 ```yaml
@@ -255,10 +274,27 @@ Platform classifiers: `linux-x86_64`, `linux-aarch_64`, `osx-x86_64`, `osx-aarch
 * **Config:** `sourceMode = "bsr"` (default)
 * **Behavior:** Uses `buf.build` for proto export only. Code generation is 100% local.
 
-### **For Restricted Clients**
+### **For Restricted Clients (Per-Module Git)**
 
 * **Config:** `-PprotoSource=git`
-* **Behavior:** Direct git clone via buf. No traffic to buf.build at all. Fully self-contained.
+* **Behavior:** Direct git clone via buf export (per-module). No traffic to buf.build at all. Fully self-contained.
+
+### **For Monorepos with Cross-Module Imports (Git Workspace)**
+
+* **Config:** `sourceMode = 'git-proto-workspace'` with extension-level `gitRepo` and `gitRef`
+* **Behavior:** Full repository clone, then `buf generate` with `--path` filters for registered modules. Automatically resolves cross-module imports. No traffic to buf.build.
+* **Example:**
+```groovy
+pipestreamProtos {
+    sourceMode = 'git-proto-workspace'
+    gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+    gitRef = "main"
+    modules {
+        register("opensearch")
+        register("schemamanager")  // Can import from opensearch
+    }
+}
+```
 
 ### **For Air-Gapped Environments**
 
