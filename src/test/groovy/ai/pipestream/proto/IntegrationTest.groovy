@@ -599,7 +599,7 @@ class IntegrationTest extends Specification {
                 implementation 'io.grpc:grpc-protobuf:1.68.0'
                 implementation 'com.google.protobuf:protobuf-java:4.29.0'
                 implementation 'io.smallrye.reactive:mutiny:2.6.2'
-                implementation 'io.quarkus:quarkus-grpc:3.30.3'
+                implementation 'io.quarkus:quarkus-grpc:3.30.4'
                 implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
             }
 
@@ -629,5 +629,204 @@ class IntegrationTest extends Specification {
         def outputDir = new File(testProjectDir, 'build/generated/source/proto/main/java')
         outputDir.exists()
         outputDir.listFiles().length > 0
+    }
+
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    def "git-proto-workspace mode exports whole repo then filters modules"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                sourceMode = 'git-proto-workspace'
+                gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+                gitRef = "main"
+                
+                modules {
+                    register("common")
+                    register("config")
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('fetchProtos', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then:
+        result.task(":fetchProtos").outcome == TaskOutcome.SUCCESS
+        result.output.contains('Exporting entire repository (workspace mode)')
+        result.output.contains('Will filter to 2 module(s)')
+
+        // Verify only registered modules were exported
+        def exportDir = new File(testProjectDir, 'build/protos/export')
+        exportDir.exists()
+        
+        def commonDir = new File(exportDir, 'common')
+        commonDir.exists()
+        commonDir.listFiles().length > 0
+        
+        def configDir = new File(exportDir, 'config')
+        configDir.exists()
+        configDir.listFiles().length > 0
+        
+        // Verify other modules were NOT exported (filtering worked)
+        def opensearchDir = new File(exportDir, 'opensearch')
+        !opensearchDir.exists()
+    }
+
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    def "git-proto-workspace mode supports cross-module imports"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                sourceMode = 'git-proto-workspace'
+                gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+                gitRef = "main"
+                
+                modules {
+                    register("opensearch")
+                    register("schemamanager")
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('fetchProtos', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then:
+        result.task(":fetchProtos").outcome == TaskOutcome.SUCCESS
+        result.output.contains('Exporting entire repository (workspace mode)')
+        
+        // Verify both modules were exported
+        def exportDir = new File(testProjectDir, 'build/protos/export')
+        def opensearchDir = new File(exportDir, 'opensearch')
+        opensearchDir.exists()
+        
+        def schemamanagerDir = new File(exportDir, 'schemamanager')
+        schemamanagerDir.exists()
+        
+        // Verify opensearch module contains the import (cross-module import should be resolvable)
+        // Note: buf export flattens structure, so files are at ai/pipestream/... not proto/ai/pipestream/...
+        def opensearchProtoDir = new File(opensearchDir, 'ai/pipestream/opensearch/v1')
+        opensearchProtoDir.exists()
+        
+        def managerProto = new File(opensearchProtoDir, 'opensearch_manager.proto')
+        if (managerProto.exists()) {
+            def protoContent = managerProto.text
+            // Should contain import for schemamanager
+            protoContent.contains('schemamanager') || protoContent.contains('schema_manager')
+        }
+    }
+
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    def "git-proto-workspace mode requires gitRepo at extension level"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                sourceMode = 'git-proto-workspace'
+                // gitRepo not set - should fail
+                
+                modules {
+                    register("common")
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('fetchProtos', '--stacktrace')
+            .forwardOutput()
+            .buildAndFail()
+
+        then:
+        result.task(":fetchProtos").outcome == TaskOutcome.FAILED
+        // Gradle validates required properties before task execution
+        result.output.contains("property 'extensionGitRepo' doesn't have a configured value") ||
+        result.output.contains('git-proto-workspace mode requires gitRepo')
+    }
+
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
+    def "git-proto-workspace mode allows per-module gitSubdir override"() {
+        given:
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                sourceMode = 'git-proto-workspace'
+                gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+                gitRef = "main"
+                
+                modules {
+                    register("common") {
+                        // gitSubdir defaults to module name, but can be overridden
+                        gitSubdir = "common"
+                    }
+                    register("config")
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('fetchProtos', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then:
+        result.task(":fetchProtos").outcome == TaskOutcome.SUCCESS
+        
+        // Verify modules were exported
+        def exportDir = new File(testProjectDir, 'build/protos/export')
+        def commonDir = new File(exportDir, 'common')
+        commonDir.exists()
+        
+        def configDir = new File(exportDir, 'config')
+        configDir.exists()
     }
 }

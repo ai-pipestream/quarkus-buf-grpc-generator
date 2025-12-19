@@ -6,6 +6,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 
 /**
  * Extension for configuring the Pipestream Proto Toolchain plugin.
@@ -13,17 +14,36 @@ import org.gradle.api.provider.Property
  * Example usage:
  * <pre>
  * pipestreamProtos {
- *     sourceMode = 'bsr'  // or 'git'
- *     quarkusGrpcVersion = '3.30.3'
+ *     sourceMode = 'bsr'  // or 'git' or 'git-proto-workspace'
+ *     quarkusGrpcVersion = '3.30.4'
  *     generateDescriptors = true
  *
+ *     // BSR mode (default)
  *     modules {
  *         register("intake") {
  *             bsr = "buf.build/pipestreamai/intake"
- *             gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
- *             gitSubdir = "intake"
  *         }
  *     }
+ *
+ *     // Git mode (per-module)
+ *     // sourceMode = 'git'
+ *     // modules {
+ *     //     register("intake") {
+ *     //         gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+ *     //         gitRef = "main"
+ *     //         gitSubdir = "intake"
+ *     //     }
+ *     // }
+ *
+ *     // Git proto workspace mode (recommended for monorepos with cross-module imports)
+ *     // sourceMode = 'git-proto-workspace'
+ *     // gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+ *     // gitRef = "main"
+ *     // modules {
+ *     //     register("opensearch")      // Just name, toolchain filters from whole repo
+ *     //     register("schemamanager")   // Supports cross-module imports
+ *     //     register("config")
+ *     // }
  *
  *     // Optional: extra arguments for buf generate
  *     bufGenerateArgs = ['--exclude-path', 'google/']
@@ -57,7 +77,7 @@ abstract class ProtoExtension {
         getBufVersion().convention(BinaryResolver.DEFAULT_BUF_VERSION)
         getProtocVersion().convention(BinaryResolver.DEFAULT_PROTOC_VERSION)
         getGrpcJavaVersion().convention(BinaryResolver.DEFAULT_GRPC_JAVA_VERSION)
-        getQuarkusGrpcVersion().convention('3.30.3')
+        getQuarkusGrpcVersion().convention('3.30.4')
         getGenerateMutiny().convention(true)
         getGenerateGrpc().convention(true)
         getGenerateDescriptors().convention(true)
@@ -78,14 +98,35 @@ abstract class ProtoExtension {
         getTestBuildDir().convention(
             project.layout.buildDirectory.dir("resources/test/grpc")
         )
+        getGitRef().convention("main")
     }
 
     /**
-     * Source mode: <code>'bsr'</code> (default) or <code>'git'</code>.
+     * Source mode: <code>'bsr'</code> (default), <code>'git'</code>, or <code>'git-proto-workspace'</code>.
      *
      * <p>Can be overridden via <code>-PprotoSource=git</code></p>
+     * <p><code>'git-proto-workspace'</code> exports the entire repository once (detecting the workspace),
+     * then filters to registered modules. This mode supports cross-module imports and is recommended for monorepos.</p>
      */
     abstract Property<String> getSourceMode()
+
+    /**
+     * Git repository URL for proto workspace mode.
+     *
+     * <p>Used when <code>sourceMode = 'git-proto-workspace'</code>. Can be overridden per-module if needed.</p>
+     * <p>Example: <code>"https://github.com/ai-pipestream/pipestream-protos.git"</code></p>
+     */
+    @Input
+    abstract Property<String> getGitRepo()
+
+    /**
+     * Git ref (branch, tag, or commit) for proto workspace mode.
+     *
+     * <p>Used when <code>sourceMode = 'git-proto-workspace'</code>. Defaults to <code>"main"</code>.</p>
+     * <p>Can be overridden per-module if needed.</p>
+     */
+    @Input
+    abstract Property<String> getGitRef()
 
     /**
      * Buf CLI version to use.

@@ -78,6 +78,8 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.sourceMode.set(extension.sourceMode)
             task.exportDir.set(exportDir)
             task.bufExecutable.setFrom(bufConfig)
+            task.extensionGitRepo.set(extension.gitRepo)
+            task.extensionGitRef.set(extension.gitRef)
         }
         
         // Capture module data during afterEvaluate for configuration cache compatibility
@@ -85,6 +87,10 @@ class ProtoToolchainPlugin implements Plugin<Project> {
         // We extract data into a plain list to avoid capturing the container
         project.afterEvaluate {
             List<Map<String, String>> moduleDataList = []
+            // Capture extension-level defaults for proto workspace mode
+            def extensionGitRepo = extension.gitRepo.getOrNull()
+            def extensionGitRef = extension.gitRef.getOrElse('main')
+            
             // Use findAll to get a snapshot of modules without capturing the container
             def modulesSnapshot = extension.modules.findAll { true }
             modulesSnapshot.each { ProtoModule module ->
@@ -92,13 +98,18 @@ class ProtoToolchainPlugin implements Plugin<Project> {
                 Map<String, String> moduleData = new LinkedHashMap<>()
                 moduleData['name'] = module.name
                 moduleData['bsr'] = module.bsr.getOrNull()
-                moduleData['gitRepo'] = module.gitRepo.getOrNull()
-                moduleData['gitRef'] = module.gitRef.getOrElse('main')
-                moduleData['gitSubdir'] = module.gitSubdir.getOrElse('.')
+                // For proto workspace mode, use extension-level defaults if module doesn't specify
+                moduleData['gitRepo'] = module.gitRepo.getOrNull() ?: extensionGitRepo
+                moduleData['gitRef'] = module.gitRef.getOrElse(extensionGitRef)
+                // For proto workspace mode, gitSubdir defaults to module name if not specified
+                moduleData['gitSubdir'] = module.gitSubdir.getOrElse(module.name)
                 moduleDataList.add(moduleData)
             }
             fetchTask.configure { task ->
                 task.moduleData.set(moduleDataList)
+                // Pass extension-level git config for proto workspace mode
+                task.extensionGitRepo.set(extensionGitRepo)
+                task.extensionGitRef.set(extensionGitRef)
             }
         }
 

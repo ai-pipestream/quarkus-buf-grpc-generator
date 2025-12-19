@@ -259,7 +259,7 @@ The `outputDir` is automatically added to your main sourceSet, so IDEs will reco
 | `bufVersion` | `String` | `'1.61.0'` | Buf CLI version to download from Maven |
 | `protocVersion` | `String` | `'4.33.2'` | Protoc compiler version to download from Maven |
 | `grpcJavaVersion` | `String` | `'1.77.0'` | gRPC Java plugin version to download from Maven |
-| `quarkusGrpcVersion` | `String` | `'3.30.3'` | Quarkus gRPC version for Mutiny generator |
+| `quarkusGrpcVersion` | `String` | `'3.30.4'` | Quarkus gRPC version for Mutiny generator |
 
 ### Custom Binary Paths
 
@@ -437,7 +437,7 @@ pipestreamProtos {
     bufVersion = '1.61.0'           // Buf CLI
     protocVersion = '4.33.2'        // Protoc compiler
     grpcJavaVersion = '1.77.0'      // gRPC Java plugin
-    quarkusGrpcVersion = '3.30.3'   // Quarkus Mutiny generator
+    quarkusGrpcVersion = '3.30.4'   // Quarkus Mutiny generator
 
     modules {
         // ...
