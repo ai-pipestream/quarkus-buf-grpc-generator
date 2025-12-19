@@ -1,6 +1,6 @@
 # Pipestream Proto Toolchain
 
-[![Maven Central](https://img.shields.io/maven-central/v/ai.pipestream/proto-toolchain?label=Maven%20Central)](https://central.sonatype.com/artifact/ai.pipestream/proto-toolchain)
+[![Maven Central](https://img.shields.io/maven-central/v/ai.pipestream/quarkus-buf-grpc-generator?label=Maven%20Central)](https://central.sonatype.com/artifact/ai.pipestream/quarkus-buf-grpc-generator)
 [![GitHub Release](https://img.shields.io/github/v/release/ai-pipestream/quarkus-buf-grpc-generator?label=GitHub%20Release)](https://github.com/ai-pipestream/quarkus-buf-grpc-generator/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange.svg)](https://openjdk.org/)
