@@ -632,7 +632,7 @@ class IntegrationTest extends Specification {
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
-    def "git-proto-workspace mode exports whole repo then filters modules"() {
+    def "git-proto-workspace mode checks out workspace from Git"() {
         given:
         buildFile << """
             plugins {
@@ -665,29 +665,20 @@ class IntegrationTest extends Specification {
             .build()
 
         then:
-        result.task(":fetchProtos").outcome == TaskOutcome.SUCCESS
-        result.output.contains('Exporting entire repository (workspace mode)')
-        result.output.contains('Will filter to 2 module(s)')
+        result.task(":fetchProtos").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE]
+        result.output.contains('Checking out proto workspace from Git')
+        result.output.contains('Registered module(s): common, config')
 
-        // Verify only registered modules were exported
         def exportDir = new File(testProjectDir, 'build/protos/export')
         exportDir.exists()
-        
-        def commonDir = new File(exportDir, 'common')
-        commonDir.exists()
-        commonDir.listFiles().length > 0
-        
-        def configDir = new File(exportDir, 'config')
-        configDir.exists()
-        configDir.listFiles().length > 0
-        
-        // Verify other modules were NOT exported (filtering worked)
-        def opensearchDir = new File(exportDir, 'opensearch')
-        !opensearchDir.exists()
+        new File(exportDir, 'buf.yaml').exists()
+        new File(exportDir, '.git').exists()
+        new File(exportDir, 'common/proto').exists()
+        new File(exportDir, 'config/proto').exists()
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
-    def "git-proto-workspace mode supports cross-module imports"() {
+    def "git-proto-workspace mode supports cross-module imports via single buf generate with --path filters"() {
         given:
         buildFile << """
             plugins {
@@ -707,6 +698,7 @@ class IntegrationTest extends Specification {
                 modules {
                     register("opensearch")
                     register("schemamanager")
+                    register("common")
                 }
             }
         """
@@ -721,27 +713,28 @@ class IntegrationTest extends Specification {
 
         then:
         result.task(":fetchProtos").outcome == TaskOutcome.SUCCESS
-        result.output.contains('Exporting entire repository (workspace mode)')
-        
-        // Verify both modules were exported
-        def exportDir = new File(testProjectDir, 'build/protos/export')
-        def opensearchDir = new File(exportDir, 'opensearch')
-        opensearchDir.exists()
-        
-        def schemamanagerDir = new File(exportDir, 'schemamanager')
-        schemamanagerDir.exists()
-        
-        // Verify opensearch module contains the import (cross-module import should be resolvable)
-        // Note: buf export flattens structure, so files are at ai/pipestream/... not proto/ai/pipestream/...
-        def opensearchProtoDir = new File(opensearchDir, 'ai/pipestream/opensearch/v1')
-        opensearchProtoDir.exists()
-        
-        def managerProto = new File(opensearchProtoDir, 'opensearch_manager.proto')
-        if (managerProto.exists()) {
-            def protoContent = managerProto.text
-            // Should contain import for schemamanager
-            protoContent.contains('schemamanager') || protoContent.contains('schema_manager')
-        }
+        result.output.contains('Checking out proto workspace from Git')
+
+        when:
+        def generate = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('generateProtos', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then:
+        generate.task(":fetchProtos").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE]
+        generate.task(":prepareGenerators").outcome == TaskOutcome.SUCCESS
+        generate.task(":generateProtos").outcome == TaskOutcome.SUCCESS
+
+        def outputDir = new File(testProjectDir, 'build/generated/source/proto/main/java')
+        outputDir.exists()
+
+        def opensearchJavaDir = new File(outputDir, 'ai/pipestream/opensearch')
+        def schemaJavaDir = new File(outputDir, 'ai/pipestream/schemamanager')
+        opensearchJavaDir.exists()
+        schemaJavaDir.exists()
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)

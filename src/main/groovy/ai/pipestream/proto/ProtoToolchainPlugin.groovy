@@ -111,6 +111,14 @@ class ProtoToolchainPlugin implements Plugin<Project> {
                 task.extensionGitRepo.set(extensionGitRepo)
                 task.extensionGitRef.set(extensionGitRef)
             }
+
+            // Also pass captured module data to downstream tasks that need to filter by module in workspace mode.
+            project.tasks.named("generateProtos").configure { task ->
+                task.moduleData.set(moduleDataList)
+            }
+            project.tasks.named("buildDescriptors").configure { task ->
+                task.moduleData.set(moduleDataList)
+            }
         }
 
         // Register prepareGenerators task
@@ -159,6 +167,9 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.outputDir.set(outputDir)
             task.bufGenerateArgs.set(extension.bufGenerateArgs)
             task.bufExecutable.setFrom(bufConfig)
+            task.sourceMode.set(extension.sourceMode)
+            // Default to empty; populated in afterEvaluate for configuration cache compatibility
+            task.moduleData.set([])
         }
 
         // Register buildDescriptors task
@@ -173,6 +184,9 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             task.exportDir.set(exportDir)
             task.descriptorPath.set(descriptorPath)
             task.bufExecutable.setFrom(bufConfig)
+            task.sourceMode.set(extension.sourceMode)
+            // Default to empty; populated in afterEvaluate for configuration cache compatibility
+            task.moduleData.set([])
 
             // Only run if generateDescriptors is enabled
             // Use captured Property directly (not extension) to avoid capturing project reference
