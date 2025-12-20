@@ -103,6 +103,9 @@ class ProtoToolchainPlugin implements Plugin<Project> {
                 moduleData['gitRef'] = module.gitRef.getOrElse(extensionGitRef)
                 // For proto workspace mode, gitSubdir defaults to module name if not specified
                 moduleData['gitSubdir'] = module.gitSubdir.getOrElse(module.name)
+                // Authentication credentials
+                moduleData['gitAuthUser'] = module.gitAuthUser.getOrNull()
+                moduleData['gitAuthToken'] = module.gitAuthToken.getOrNull()
                 moduleDataList.add(moduleData)
             }
             fetchTask.configure { task ->

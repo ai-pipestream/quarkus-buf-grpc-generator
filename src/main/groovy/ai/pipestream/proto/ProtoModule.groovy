@@ -50,9 +50,27 @@ abstract class ProtoModule {
     @Input
     abstract Property<String> getGitSubdir()
 
+    /**
+     * Optional: Git username for basic auth.
+     * <p>If provided with gitAuthToken, will be used to construct authenticated URL.</p>
+     */
+    @Input
+    @Optional
+    abstract Property<String> getGitAuthUser()
+
+    /**
+     * Optional: Git auth token (PAT) for basic auth.
+     * <p>If provided, will be used to construct authenticated URL.</p>
+     */
+    @Input
+    @Optional
+    abstract Property<String> getGitAuthToken()
+
     // Convenience setters for DSL
     void bsr(String value) { getBsr().set(value) }
     void gitRepo(String value) { getGitRepo().set(value) }
     void gitRef(String value) { getGitRef().set(value) }
     void gitSubdir(String value) { getGitSubdir().set(value) }
+    void gitAuthUser(String value) { getGitAuthUser().set(value) }
+    void gitAuthToken(String value) { getGitAuthToken().set(value) }
 }

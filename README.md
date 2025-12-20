@@ -52,6 +52,24 @@ Build:
 
 Generated sources appear in `build/generated/source/proto/main/java/`.
 
+## Git Authentication
+
+For private repositories, you can provide authentication credentials. The plugin uses these to securely construct an authenticated Git URL for `buf export`.
+
+```groovy
+pipestreamProtos {
+    modules {
+        register("my-private-module") {
+            gitRepo = "https://github.com/myorg/my-private-protos.git"
+            
+            // Use environment variables for secrets (Recommended)
+            gitAuthToken = System.getenv("GIT_TOKEN") // PAT or CI Token
+            gitAuthUser = System.getenv("GIT_USER")   // Optional: defaults to token-only auth if omitted
+        }
+    }
+}
+```
+
 ## Documentation
 
 | Document | Description |

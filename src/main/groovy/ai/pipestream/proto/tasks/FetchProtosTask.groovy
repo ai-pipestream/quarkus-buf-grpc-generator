@@ -1,6 +1,5 @@
 package ai.pipestream.proto.tasks
 
-import ai.pipestream.proto.ProtoModule
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -148,9 +147,35 @@ abstract class FetchProtosTask extends DefaultTask {
     protected void fetchFromGit(Map<String, String> moduleData, File outputDir) {
         def moduleName = moduleData['name']
         def gitRepo = moduleData['gitRepo']
+        def gitAuthUser = moduleData['gitAuthUser']
+        def gitAuthToken = moduleData['gitAuthToken']
+
         if (!gitRepo) {
             throw new GradleException("Module '${moduleName}' has no Git repository configured. " +
                 "Set gitRepo = 'https://github.com/org/repo.git' or use -PprotoSource=bsr")
+        }
+
+        // Handle authentication if credentials are provided
+        if (gitAuthToken) {
+            try {
+                def uri = new URI(gitRepo)
+                if (uri.scheme == 'http' || uri.scheme == 'https') {
+                    def authString = gitAuthUser ? "${gitAuthUser}:${gitAuthToken}" : gitAuthToken
+                    // Reconstruct URI with user info
+                    uri = new URI(uri.scheme, authString, uri.host, uri.port, uri.path, uri.query, uri.fragment)
+                    gitRepo = uri.toString()
+                    logger.lifecycle("Using authenticated Git URL for module '${moduleName}'")
+                } else {
+                    logger.warn("Authentication credentials provided but Git URL is not HTTP/HTTPS (scheme: ${uri.scheme}). Ignoring credentials for: ${moduleData['gitRepo']}")
+                }
+            } catch (Exception e) {
+                // Check if it looks like an SSH URL (e.g. git@github.com:...) which causes URI parsing to fail
+                if (gitRepo.startsWith("git@") || gitRepo.startsWith("ssh://")) {
+                     logger.warn("Authentication credentials provided but Git URL appears to be SSH/SCP-style. Ignoring credentials for: ${moduleData['gitRepo']}")
+                } else {
+                     logger.warn("Failed to inject credentials into Git URL: ${e.message}. Using original URL.")
+                }
+            }
         }
 
         def gitRef = moduleData['gitRef'] ?: 'main'
@@ -163,20 +188,37 @@ abstract class FetchProtosTask extends DefaultTask {
             bufGitUrl += ",subdir=${gitSubdir}"
         }
 
-        logger.lifecycle("Exporting ${moduleName} from Git: ${gitRepo} (ref=${gitRef}, subdir=${gitSubdir})")
+        // Log masking the URL if it contains credentials
+        def displayUrl = moduleData['gitRepo'] // Use original URL for display
+        if (gitAuthToken) {
+            displayUrl = "(authenticated URL hidden)"
+        }
+        logger.lifecycle("Exporting ${moduleName} from Git: ${displayUrl} (ref=${gitRef}, subdir=${gitSubdir})")
 
         def bufBinary = resolveBufBinary()
         logger.info("Using buf binary: ${bufBinary.absolutePath}")
 
+        def stdout = new ByteArrayOutputStream()
+        def stderr = new ByteArrayOutputStream()
+
         ExecResult result = getExecOperations().exec { spec ->
             spec.commandLine bufBinary.absolutePath, 'export', bufGitUrl, '--output', outputDir.absolutePath
+            spec.standardOutput = stdout
+            spec.errorOutput = stderr
             spec.ignoreExitValue = true
         }
 
         if (result.exitValue != 0) {
+            def errorMsg = stderr.toString() + stdout.toString()
+            // Mask token in error message if present
+            if (gitAuthToken) {
+                errorMsg = errorMsg.replace(gitAuthToken, "******")
+            }
+            
             throw new GradleException(
-                "Failed to export '${moduleName}' from Git: ${gitRepo}\n" +
+                "Failed to export '${moduleName}' from Git.\n" +
                 "Exit code: ${result.exitValue}\n" +
+                "Error output:\n${errorMsg}\n" +
                 "Ensure you have access to the repository."
             )
         }
