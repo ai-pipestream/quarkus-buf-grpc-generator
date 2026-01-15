@@ -37,7 +37,7 @@ dependencies {
 
     // Testing
     testImplementation gradleTestKit()
-    testImplementation platform('org.junit:junit-bom:6.0.1')
+    testImplementation platform('org.junit:junit-bom:6.0.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.spockframework:spock-core:2.4-groovy-4.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
