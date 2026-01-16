@@ -111,7 +111,10 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             fetchTask.configure { task ->
                 task.moduleData.set(moduleDataList)
                 // Pass extension-level git config for proto workspace mode
-                task.extensionGitRepo.set(extensionGitRepo)
+                // Only set if present to avoid IntelliJ Tooling API issues with null values
+                if (extensionGitRepo) {
+                    task.extensionGitRepo.set(extensionGitRepo)
+                }
                 task.extensionGitRef.set(extensionGitRef)
             }
 
