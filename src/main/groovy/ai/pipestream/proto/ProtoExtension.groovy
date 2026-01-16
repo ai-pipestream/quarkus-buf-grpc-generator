@@ -77,7 +77,7 @@ abstract class ProtoExtension {
         getBufVersion().convention(BinaryResolver.DEFAULT_BUF_VERSION)
         getProtocVersion().convention(BinaryResolver.DEFAULT_PROTOC_VERSION)
         getGrpcJavaVersion().convention(BinaryResolver.DEFAULT_GRPC_JAVA_VERSION)
-        getQuarkusGrpcVersion().convention('3.30.4')
+        getQuarkusGrpcVersion().convention('3.30.6')
         getGenerateMutiny().convention(true)
         getGenerateGrpc().convention(true)
         getGenerateDescriptors().convention(true)
