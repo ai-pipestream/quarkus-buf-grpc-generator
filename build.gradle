@@ -22,6 +22,11 @@ scmVersion {
 group = 'ai.pipestream'
 version = scmVersion.version
 
+// Default versions for generated code - change these when updating dependencies
+ext {
+    defaultQuarkusGrpcVersion = '3.30.8'
+}
+
 repositories {
     mavenCentral()
     gradlePluginPortal()
@@ -46,6 +51,33 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+// Generate BuildConfig with default versions
+def generateBuildConfig = tasks.register('generateBuildConfig') {
+    def outputDir = layout.buildDirectory.dir('generated/sources/buildConfig/groovy/main')
+    def quarkusVersion = defaultQuarkusGrpcVersion
+    outputs.dir(outputDir)
+    inputs.property('quarkusVersion', quarkusVersion)
+
+    doLast {
+        def file = outputDir.get().file('ai/pipestream/proto/BuildConfig.groovy').asFile
+        file.parentFile.mkdirs()
+        file.text = """\
+package ai.pipestream.proto
+
+/**
+ * Generated build configuration constants.
+ * Do not edit - values are set in build.gradle.
+ */
+class BuildConfig {
+    static final String DEFAULT_QUARKUS_GRPC_VERSION = '${quarkusVersion}'
+}
+"""
+    }
+}
+
+sourceSets.main.groovy.srcDir(tasks.named('generateBuildConfig'))
+tasks.named('compileGroovy').configure { dependsOn(generateBuildConfig) }
 
 gradlePlugin {
     plugins {
