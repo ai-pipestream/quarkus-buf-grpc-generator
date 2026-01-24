@@ -15,7 +15,7 @@ import org.gradle.api.tasks.Input
  * <pre>
  * pipestreamProtos {
  *     sourceMode = 'bsr'  // or 'git' or 'git-proto-workspace'
- *     quarkusGrpcVersion = '3.30.4'
+ *     quarkusGrpcVersion = '3.30.6'
  *     generateDescriptors = true
  *
  *     // BSR mode (default)
@@ -77,7 +77,7 @@ abstract class ProtoExtension {
         getBufVersion().convention(BinaryResolver.DEFAULT_BUF_VERSION)
         getProtocVersion().convention(BinaryResolver.DEFAULT_PROTOC_VERSION)
         getGrpcJavaVersion().convention(BinaryResolver.DEFAULT_GRPC_JAVA_VERSION)
-        getQuarkusGrpcVersion().convention('3.30.6')
+        getQuarkusGrpcVersion().convention('3.30.7')
         getGenerateMutiny().convention(true)
         getGenerateGrpc().convention(true)
         getGenerateDescriptors().convention(true)
