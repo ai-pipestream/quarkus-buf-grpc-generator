@@ -38,7 +38,7 @@ dependencies {
 
     // JSON parsing for pipestream-protos.json
     // https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind
-    implementation 'tools.jackson.core:jackson-databind:3.0.3'
+    implementation 'tools.jackson.core:jackson-databind:3.0.4'
 
     // Testing
     testImplementation gradleTestKit()
