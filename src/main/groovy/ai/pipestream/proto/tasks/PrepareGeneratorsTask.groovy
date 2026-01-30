@@ -254,12 +254,12 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
 # Wrapper for Quarkus Mutiny gRPC generator
 set -e
 JAVA_BIN="java"
-if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
-  JAVA_BIN="$JAVA_HOME/bin/java"
+if [ -n "\$JAVA_HOME" ] && [ -x "\$JAVA_HOME/bin/java" ]; then
+  JAVA_BIN="\$JAVA_HOME/bin/java"
 elif [ -x "${runtimeJavaUnix}" ]; then
   JAVA_BIN="${runtimeJavaUnix}"
 fi
-exec "$JAVA_BIN" -cp "${unixClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator "\$@"
+exec "\$JAVA_BIN" -cp "${unixClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator "\$@"
 """
         shellScript.setExecutable(true)
         logger.lifecycle("Created Mutiny generator wrapper (Unix): ${shellScript}")
