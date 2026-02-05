@@ -16,3 +16,4 @@ build/
 Thumbs.db
 bin
 .claude-session
+.claude
