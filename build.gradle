@@ -24,7 +24,7 @@ version = scmVersion.version
 
 // Default versions for generated code - change these when updating dependencies
 ext {
-    defaultQuarkusGrpcVersion = '3.31.3'
+    defaultQuarkusGrpcVersion = '3.31.4'
 }
 
 repositories {
