@@ -5,7 +5,10 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectories
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -21,12 +24,14 @@ import java.nio.file.StandardCopyOption
  *
  * <p>This eliminates the need for manual copy tasks in build.gradle files.</p>
  */
+@DisableCachingByDefault(because = 'Copies generated descriptor file to build resources directory')
 abstract class CopyDescriptorsToResourcesTask extends DefaultTask {
 
     /**
      * The generated descriptor file to copy.
      */
     @InputFile
+    @PathSensitive(PathSensitivity.NONE)
     abstract RegularFileProperty getDescriptorFile()
 
     /**

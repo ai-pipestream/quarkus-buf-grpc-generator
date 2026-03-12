@@ -9,9 +9,12 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 
@@ -23,6 +26,7 @@ import javax.inject.Inject
  * <p>For 'git-proto-workspace' mode, performs a Git checkout of the repository into the export directory.
  * Code generation is then performed against the workspace root with <code>--path</code> filtering.</p>
  */
+@DisableCachingByDefault(because = 'Fetches protos from external registries and Git repositories')
 abstract class FetchProtosTask extends DefaultTask {
 
     /**
@@ -55,6 +59,7 @@ abstract class FetchProtosTask extends DefaultTask {
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**

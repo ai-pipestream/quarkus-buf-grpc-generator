@@ -9,9 +9,12 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 
@@ -21,18 +24,21 @@ import javax.inject.Inject
  * Compares the current proto files against a reference (BSR module, git ref, or local directory)
  * to detect breaking changes that could affect API compatibility.
  */
+@DisableCachingByDefault(because = 'Invokes external buf process with reference input that may be remote')
 abstract class CheckBreakingTask extends DefaultTask {
 
     /**
      * Directory containing current proto files to check.
      */
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     abstract DirectoryProperty getProtoDir()
 
     /**
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**

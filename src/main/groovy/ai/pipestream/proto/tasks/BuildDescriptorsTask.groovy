@@ -11,10 +11,13 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 import java.nio.file.Files
@@ -30,6 +33,7 @@ import java.nio.file.StandardCopyOption
  * all unique proto files (deduplicated by path), then builds a single
  * combined descriptor that includes all services and messages.</p>
  */
+@DisableCachingByDefault(because = 'Invokes external buf process over mutable proto workspace inputs')
 abstract class BuildDescriptorsTask extends DefaultTask {
 
     /**
@@ -47,6 +51,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
      * <p>Each subdirectory is a module.</p>
      */
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     @SkipWhenEmpty
     abstract DirectoryProperty getExportDir()
 
@@ -60,6 +65,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**

@@ -8,9 +8,12 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 
@@ -20,18 +23,21 @@ import javax.inject.Inject
  * This task runs after fetchProtos and validates the proto files against
  * buf's lint rules. It can be configured with additional lint arguments.
  */
+@DisableCachingByDefault(because = 'Invokes external buf process to lint proto sources')
 abstract class LintProtosTask extends DefaultTask {
 
     /**
      * Directory containing exported proto files.
      */
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     abstract DirectoryProperty getProtoDir()
 
     /**
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**

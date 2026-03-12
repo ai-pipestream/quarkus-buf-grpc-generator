@@ -13,8 +13,11 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.artifacts.ConfigurationContainer
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 
@@ -29,6 +32,7 @@ import javax.inject.Inject
  *   <li>Includes any extra plugins configured by the user</li>
  * </ol>
  */
+@DisableCachingByDefault(because = 'Resolves tool binaries and generates scripts/config with absolute paths')
 abstract class PrepareGeneratorsTask extends DefaultTask {
 
     /**
@@ -102,6 +106,7 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
      * <p>Ignored if <code>customProtocPath</code> is set.</p>
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     @org.gradle.api.tasks.Optional
     abstract ConfigurableFileCollection getProtocExecutable()
 
@@ -112,6 +117,7 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
      * <p>Ignored if <code>customGrpcJavaPath</code> is set.</p>
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     @org.gradle.api.tasks.Optional
     abstract ConfigurableFileCollection getGrpcJavaExecutable()
 
@@ -121,6 +127,7 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
      * <p>This is set by the plugin during configuration to avoid unsafe resolution at execution time.</p>
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     @org.gradle.api.tasks.Optional
     abstract ConfigurableFileCollection getMutinyGeneratorJars()
 

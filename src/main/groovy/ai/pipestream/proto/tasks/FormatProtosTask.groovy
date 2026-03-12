@@ -9,9 +9,12 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 
@@ -22,6 +25,7 @@ import javax.inject.Inject
  * to a separate directory. Use checkOnly mode to verify formatting without
  * making changes.
  */
+@DisableCachingByDefault(because = 'Formats proto files in place via external buf process')
 abstract class FormatProtosTask extends DefaultTask {
 
     /**
@@ -34,6 +38,7 @@ abstract class FormatProtosTask extends DefaultTask {
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**

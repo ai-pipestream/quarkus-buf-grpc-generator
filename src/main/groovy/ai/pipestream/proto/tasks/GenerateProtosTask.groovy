@@ -12,10 +12,13 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.gradle.work.DisableCachingByDefault
 
 import javax.inject.Inject
 
@@ -25,6 +28,7 @@ import javax.inject.Inject
  * This task iterates over all exported module directories and runs
  * buf generate with the prepared buf.gen.yaml configuration.
  */
+@DisableCachingByDefault(because = 'Invokes external buf process for code generation')
 abstract class GenerateProtosTask extends DefaultTask {
 
     /**
@@ -41,6 +45,7 @@ abstract class GenerateProtosTask extends DefaultTask {
      * Each subdirectory is a module.
      */
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     @SkipWhenEmpty
     abstract DirectoryProperty getExportDir()
 
@@ -48,6 +53,7 @@ abstract class GenerateProtosTask extends DefaultTask {
      * The buf.gen.yaml configuration file (from prepareGenerators).
      */
     @InputFile
+    @PathSensitive(PathSensitivity.NONE)
     abstract RegularFileProperty getBufGenYaml()
 
     /**
@@ -60,6 +66,7 @@ abstract class GenerateProtosTask extends DefaultTask {
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
+    @PathSensitive(PathSensitivity.NONE)
     abstract ConfigurableFileCollection getBufExecutable()
 
     /**
