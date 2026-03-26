@@ -15,7 +15,7 @@ import org.gradle.api.tasks.Input
  * <pre>
  * pipestreamProtos {
  *     sourceMode = 'bsr'  // or 'git' or 'git-proto-workspace'
- *     quarkusGrpcVersion = '3.30.6'
+ *     quarkusGrpcVersion = '3.32.4'
  *     generateDescriptors = true
  *
  *     // BSR mode (default)
