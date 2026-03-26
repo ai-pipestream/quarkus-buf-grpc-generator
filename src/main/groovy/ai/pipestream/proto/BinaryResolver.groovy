@@ -81,13 +81,7 @@ class BinaryResolver {
 
         project.dependencies.add(
             configName,
-            [
-                group: group,
-                name: name,
-                version: version,
-                classifier: classifier,
-                ext: "exe"
-            ]
+            "${group}:${name}:${version}:${classifier}@exe"
         )
 
         project.logger.info("Configured ${name} dependency: ${group}:${name}:${version}:${classifier}@exe")

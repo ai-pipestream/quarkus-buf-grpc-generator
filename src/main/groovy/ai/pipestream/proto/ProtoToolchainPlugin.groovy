@@ -91,8 +91,8 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             def extensionGitRepo = extension.gitRepo.getOrNull()
             def extensionGitRef = extension.gitRef.getOrElse('main')
             
-            // Use findAll to get a snapshot of modules without capturing the container
-            def modulesSnapshot = extension.modules.findAll { true }
+            // Snapshot the modules list without using deprecated findAll(Closure)
+            def modulesSnapshot = extension.modules.toList()
             modulesSnapshot.each { ProtoModule module ->
                 // Extract all data immediately into a plain map
                 Map<String, String> moduleData = new LinkedHashMap<>()
