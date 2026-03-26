@@ -309,7 +309,7 @@ pipestreamProtos {
 | `bufVersion` | `'1.61.0'` | Buf CLI version |
 | `protocVersion` | `'4.33.2'` | Protoc compiler version |
 | `grpcJavaVersion` | `'1.77.0'` | gRPC Java plugin version |
-| `quarkusGrpcVersion` | `'3.32.4'` | Quarkus Mutiny generator version |
+| `quarkusGrpcVersion` | `'3.34.1'` | Quarkus Mutiny generator version |
 | `protocPath` | `null` | Custom protoc path (skips Maven) |
 | `grpcJavaPluginPath` | `null` | Custom grpc-java path (skips Maven) |
 | `generateGrpc` | `true` | Generate gRPC stubs |

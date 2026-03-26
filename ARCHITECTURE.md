@@ -85,8 +85,8 @@ pipestreamProtos {
     // gRPC Java plugin version (default: 1.77.0)
     grpcJavaVersion = '1.77.0'
 
-    // Quarkus gRPC version for Mutiny generation (default: 3.32.4)
-    quarkusGrpcVersion = '3.32.4'
+    // Quarkus gRPC version for Mutiny generation (default: 3.30.4)
+    quarkusGrpcVersion = '3.30.4'
 
     // ===== Optional: Custom Binary Paths =====
     // Use these to skip Maven download and use your own binaries
