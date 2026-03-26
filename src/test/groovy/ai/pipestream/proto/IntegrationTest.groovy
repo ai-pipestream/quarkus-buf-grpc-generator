@@ -599,7 +599,7 @@ class IntegrationTest extends Specification {
                 implementation 'io.grpc:grpc-protobuf:1.68.0'
                 implementation 'com.google.protobuf:protobuf-java:4.29.0'
                 implementation 'io.smallrye.reactive:mutiny:2.6.2'
-                implementation 'io.quarkus:quarkus-grpc:3.30.4'
+                implementation 'io.quarkus:quarkus-grpc:3.34.1'
                 implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
             }
 
