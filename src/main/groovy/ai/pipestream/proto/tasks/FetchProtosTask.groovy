@@ -111,15 +111,8 @@ abstract class FetchProtosTask extends DefaultTask {
         logger.lifecycle("Fetched ${moduleDataList.size()} module(s) to ${exportDir}")
     }
 
-    /**
-     * Resolves the buf executable file, ensuring it's executable.
-     */
     protected File resolveBufBinary() {
-        def executable = getBufExecutable().singleFile
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-        return executable
+        return ai.pipestream.proto.BinaryResolver.resolveExecutableSafely(getBufExecutable())
     }
 
     protected void fetchFromBsr(Map<String, String> moduleData, File outputDir) {

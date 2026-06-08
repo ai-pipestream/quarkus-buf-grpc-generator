@@ -5,6 +5,7 @@
 package ai.pipestream.proto
 
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
 
 /**
  * Resolves and downloads binary tools from Maven Central for protobuf code generation.
@@ -110,15 +111,25 @@ class BinaryResolver {
         return resolveExecutable(project, GRPC_JAVA_CONFIGURATION_NAME)
     }
 
+    private static final Object resolveLock = new Object()
+
+    /**
+     * Resolves an executable from a FileCollection safely, ensuring thread-safe
+     * resolution and executable permissions setup.
+     */
+    static File resolveExecutableSafely(FileCollection fileCollection) {
+        synchronized (resolveLock) {
+            def executable = fileCollection.singleFile
+            if (!executable.canExecute()) {
+                executable.setExecutable(true)
+            }
+            return executable
+        }
+    }
+
     private static File resolveExecutable(Project project, String configName) {
         def config = project.configurations.named(configName).get()
-        def executable = config.singleFile
-
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-
-        return executable
+        return resolveExecutableSafely(config)
     }
 
     // ========== Platform Detection ==========

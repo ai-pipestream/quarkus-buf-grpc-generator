@@ -154,15 +154,8 @@ abstract class GenerateProtosTask extends DefaultTask {
         logger.lifecycle("Generated code for ${moduleCount} module(s) to ${outputDir}")
     }
 
-    /**
-     * Resolves the buf executable file, ensuring it's executable.
-     */
     protected File resolveBufBinary() {
-        def executable = getBufExecutable().singleFile
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-        return executable
+        return ai.pipestream.proto.BinaryResolver.resolveExecutableSafely(getBufExecutable())
     }
 
     protected void generateModule(File moduleDir, File bufGenYaml, List<String> extraArgs) {
