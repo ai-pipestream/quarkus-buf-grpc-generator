@@ -95,14 +95,7 @@ abstract class LintProtosTask extends DefaultTask {
         logger.lifecycle("buf lint passed - no issues found")
     }
 
-    /**
-     * Resolves the buf executable file, ensuring it's executable.
-     */
     protected File resolveBufBinary() {
-        def executable = getBufExecutable().singleFile
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-        return executable
+        return ai.pipestream.proto.BinaryResolver.resolveExecutableSafely(getBufExecutable())
     }
 }

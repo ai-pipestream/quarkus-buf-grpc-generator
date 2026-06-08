@@ -187,15 +187,8 @@ abstract class BuildDescriptorsTask extends DefaultTask {
         }
     }
 
-    /**
-     * Resolves the buf executable file, ensuring it's executable.
-     */
     protected File resolveBufBinary() {
-        def executable = getBufExecutable().singleFile
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-        return executable
+        return ai.pipestream.proto.BinaryResolver.resolveExecutableSafely(getBufExecutable())
     }
 
     protected void buildDescriptor(File moduleDir, File outputFile) {

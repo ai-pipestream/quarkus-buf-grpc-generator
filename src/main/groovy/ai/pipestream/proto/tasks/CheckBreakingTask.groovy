@@ -116,14 +116,7 @@ abstract class CheckBreakingTask extends DefaultTask {
         logger.lifecycle("No breaking changes detected")
     }
 
-    /**
-     * Resolves the buf executable file, ensuring it's executable.
-     */
     protected File resolveBufBinary() {
-        def executable = getBufExecutable().singleFile
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-        return executable
+        return ai.pipestream.proto.BinaryResolver.resolveExecutableSafely(getBufExecutable())
     }
 }

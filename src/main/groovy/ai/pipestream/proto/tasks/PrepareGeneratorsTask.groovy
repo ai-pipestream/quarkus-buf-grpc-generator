@@ -215,15 +215,8 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
         return resolveExecutable(getGrpcJavaExecutable())
     }
 
-    /**
-     * Resolves an executable from a file collection and ensures it's executable.
-     */
     private static String resolveExecutable(ConfigurableFileCollection fileCollection) {
-        def executable = fileCollection.singleFile
-        if (!executable.canExecute()) {
-            executable.setExecutable(true)
-        }
-        return executable.absolutePath
+        return ai.pipestream.proto.BinaryResolver.resolveExecutableSafely(fileCollection).absolutePath
     }
 
     /**
