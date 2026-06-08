@@ -246,6 +246,18 @@ abstract class PrepareGeneratorsTask extends DefaultTask {
         def runtimeJavaUnix = new File(System.getProperty('java.home'), 'bin/java').absolutePath
         def runtimeJavaWindows = new File(System.getProperty('java.home'), 'bin/java.exe').absolutePath
 
+        // Build JVM options to suppress terminally deprecated Unsafe warnings on Java 23+
+        def specVersionStr = System.getProperty('java.specification.version')
+        def jvmOpts = ""
+        try {
+            int majorVersion = Integer.parseInt(specVersionStr)
+            if (majorVersion >= 23) {
+                jvmOpts = "--sun-misc-unsafe-memory-access=allow"
+            }
+        } catch (NumberFormatException ignored) {
+            // ignore
+        }
+
         // Create Unix shell script
         def shellScript = new File(pluginDir, "protoc-gen-mutiny")
         shellScript.text = """\
@@ -259,7 +271,7 @@ if [ -n "\$JAVA_HOME" ] && [ -x "\$JAVA_HOME/bin/java" ]; then
 elif [ -x "${runtimeJavaUnix}" ]; then
   JAVA_BIN="${runtimeJavaUnix}"
 fi
-exec "\$JAVA_BIN" -cp "${unixClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator "\$@"
+exec "\$JAVA_BIN" ${jvmOpts ? jvmOpts + ' ' : ''}-cp "${unixClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator "\$@"
 """
         shellScript.setExecutable(true)
         logger.lifecycle("Created Mutiny generator wrapper (Unix): ${shellScript}")
@@ -273,7 +285,7 @@ REM Wrapper for Quarkus Mutiny gRPC generator
 set JAVA_BIN=java
 if defined JAVA_HOME if exist "%JAVA_HOME%\\bin\\java.exe" set JAVA_BIN=%JAVA_HOME%\\bin\\java.exe
 if "%JAVA_BIN%"=="java" if exist "${runtimeJavaWindows}" set JAVA_BIN=${runtimeJavaWindows}
-"%JAVA_BIN%" -cp "${windowsClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator %*
+"%JAVA_BIN%" ${jvmOpts ? jvmOpts + ' ' : ''}-cp "${windowsClasspath}" io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator %*
 """
         logger.lifecycle("Created Mutiny generator wrapper (Windows): ${batFile}")
 
