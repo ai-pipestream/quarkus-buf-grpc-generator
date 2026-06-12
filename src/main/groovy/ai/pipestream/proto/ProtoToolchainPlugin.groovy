@@ -189,6 +189,9 @@ class ProtoToolchainPlugin implements Plugin<Project> {
 
             task.exportDir.set(exportDir)
             task.descriptorPath.set(descriptorPath)
+            // Module manifest lands next to the descriptor set (proto-modules.properties).
+            task.manifestPath.set(project.layout.file(
+                descriptorPath.map { f -> new File(f.asFile.parentFile, 'proto-modules.properties') }))
             task.bufExecutable.setFrom(bufConfig)
             task.sourceMode.set(extension.sourceMode)
             // Default to empty; populated in afterEvaluate for configuration cache compatibility

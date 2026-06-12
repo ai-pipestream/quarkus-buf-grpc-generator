@@ -185,6 +185,14 @@ class IntegrationTest extends Specification {
         def descriptorFile = new File(testProjectDir, 'build/descriptors/proto.desc')
         descriptorFile.exists()
         descriptorFile.length() > 0
+
+        // Verify the module manifest was emitted alongside it: every entry maps
+        // a descriptor-relative proto path to the module it came from.
+        def manifestFile = new File(testProjectDir, 'build/descriptors/proto-modules.properties')
+        manifestFile.exists()
+        def manifestLines = manifestFile.readLines().findAll { !it.isBlank() }
+        !manifestLines.isEmpty()
+        manifestLines.every { it ==~ /[^=]+\.proto=buf/ }
     }
 
     @Timeout(value = 120, unit = TimeUnit.SECONDS)

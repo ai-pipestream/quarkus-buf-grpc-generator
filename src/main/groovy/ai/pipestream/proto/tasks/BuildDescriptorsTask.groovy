@@ -62,6 +62,21 @@ abstract class BuildDescriptorsTask extends DefaultTask {
     abstract RegularFileProperty getDescriptorPath()
 
     /**
+     * Output file for the module manifest emitted alongside the descriptor set:
+     * one {@code <file-name>=<module-id>} line per proto file, where the key is
+     * the file's name exactly as it appears inside the FileDescriptorSet (its
+     * path relative to the module root) and the value is the module it came
+     * from.
+     *
+     * <p>Buf strips module roots from file names when building the descriptor,
+     * so which module a file belongs to is only observable here, at build time.
+     * Consumers that serve or browse descriptor types use this manifest to
+     * attribute each type to its source module.</p>
+     */
+    @OutputFile
+    abstract RegularFileProperty getManifestPath()
+
+    /**
      * The buf executable (resolved from Maven Central).
      */
     @InputFiles
@@ -113,6 +128,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
 
             logger.lifecycle("Building descriptors from workspace root for ${protoPaths.size()} proto file(s) across module(s): ${modulePaths.join(', ')}")
             this.buildWorkspaceDescriptor(exportDir, descriptorFile, protoPaths)
+            writeManifest(workspaceManifestEntries(exportDir, modulePaths))
             logger.lifecycle("Built descriptor file: ${descriptorFile}")
             return
         }
@@ -133,6 +149,7 @@ abstract class BuildDescriptorsTask extends DefaultTask {
         // For single module, build directly
         if (moduleDirs.size() == 1) {
             this.buildDescriptor(moduleDirs[0], descriptorFile)
+            writeManifest(moduleDirManifestEntries(moduleDirs))
         } else {
             // Multiple modules - create a flat directory with all unique protos
             def flatDir = new File(descriptorFile.parentFile, "flat-protos")
@@ -158,6 +175,9 @@ abstract class BuildDescriptorsTask extends DefaultTask {
 
             // Build combined descriptor from flat directory
             this.buildDescriptor(flatDir, descriptorFile)
+
+            // Manifest follows the same later-module-wins dedup as the flat copy.
+            writeManifest(moduleDirManifestEntries(moduleDirs))
 
             // Clean up flat directory
             flatDir.deleteDir()
@@ -367,5 +387,56 @@ abstract class BuildDescriptorsTask extends DefaultTask {
         normalized = normalized.replaceAll(/\/proto$/, '')
         def parts = normalized.split('/')
         return parts ? parts.last() : null
+    }
+
+    /**
+     * Maps each proto file (by its path relative to the module root — its name
+     * inside the FileDescriptorSet) to its workspace module id.
+     */
+    protected static Map<String, String> workspaceManifestEntries(File workspaceRoot, List<String> moduleRoots) {
+        def entries = new TreeMap<String, String>()
+        moduleRoots.each { moduleRoot ->
+            def moduleId = idFromModulePath(moduleRoot)
+            def rootDir = new File(workspaceRoot, moduleRoot)
+            if (!moduleId || !rootDir.isDirectory()) {
+                return
+            }
+            rootDir.eachFileRecurse { f ->
+                if (f.isFile() && f.name.endsWith('.proto')) {
+                    def rel = rootDir.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+                    entries[rel] = moduleId
+                }
+            }
+        }
+        return entries
+    }
+
+    /**
+     * Manifest entries for plain module directories (BSR/git export modes):
+     * relative path within the module directory → directory name. Later modules
+     * overwrite earlier ones, matching the flat-copy deduplication.
+     */
+    protected static Map<String, String> moduleDirManifestEntries(List<File> moduleDirs) {
+        def entries = new TreeMap<String, String>()
+        moduleDirs.each { moduleDir ->
+            moduleDir.eachFileRecurse { f ->
+                if (f.isFile() && f.name.endsWith('.proto')) {
+                    def rel = moduleDir.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+                    entries[rel] = moduleDir.name
+                }
+            }
+        }
+        return entries
+    }
+
+    protected void writeManifest(Map<String, String> entries) {
+        def manifestFile = getManifestPath().get().asFile
+        manifestFile.parentFile.mkdirs()
+        def text = new StringBuilder()
+        entries.each { file, module ->
+            text.append(file).append('=').append(module).append('\n')
+        }
+        manifestFile.text = text.toString()
+        logger.lifecycle("Built descriptor module manifest (${entries.size()} proto file(s)): ${manifestFile}")
     }
 }
