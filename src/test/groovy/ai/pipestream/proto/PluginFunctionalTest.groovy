@@ -524,4 +524,97 @@ class PluginFunctionalTest extends Specification {
         def bufGenYaml = new File(testProjectDir, 'build/buf.gen.yaml')
         bufGenYaml.text.contains(fakeGrpcJava.absolutePath)
     }
+
+    def "descriptorOnly keeps the descriptor but prunes generated Java even with generateMutiny/generateGrpc = true"() {
+        given: "a descriptorOnly project that ALSO has codegen flags on"
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                descriptorOnly = true
+                // Codegen flags are deliberately ON: descriptorOnly must STILL
+                // leave no generated Java for compilation (the robustness contract
+                // — disabling tasks by name was not enough).
+                generateMutiny = true
+                generateGrpc = true
+                modules {
+                    register("test-module") {
+                        bsr = "buf.build/bufbuild/buf"
+                    }
+                }
+            }
+        """
+
+        when: "generation runs, then the descriptor is built, then the prune fires"
+        // pruneGeneratedSources dependsOn buildDescriptors and mustRunAfter
+        // generateProtos, so requesting both gives: generate -> descriptor -> prune.
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('generateProtos', 'pruneGeneratedSources', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then: "the full pipeline ran"
+        result.task(":generateProtos").outcome == TaskOutcome.SUCCESS
+        result.task(":buildDescriptors").outcome == TaskOutcome.SUCCESS
+        result.task(":pruneGeneratedSources").outcome == TaskOutcome.SUCCESS
+
+        and: "the descriptor set survives"
+        new File(testProjectDir, 'build/descriptors/proto.desc').exists()
+
+        and: "NO generated Java survives — it was deleted after the descriptor was built"
+        def generatedRoot = new File(testProjectDir, 'build/generated')
+        def leftoverJava = []
+        if (generatedRoot.exists()) {
+            generatedRoot.eachFileRecurse { if (it.name.endsWith('.java')) leftoverJava << it }
+        }
+        leftoverJava.isEmpty()
+    }
+
+    def "without descriptorOnly, generated Java is kept and wired as a source root"() {
+        given: "the same project WITHOUT descriptorOnly (the default)"
+        buildFile << """
+            plugins {
+                id 'ai.pipestream.proto-toolchain'
+                id 'java'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            pipestreamProtos {
+                modules {
+                    register("test-module") {
+                        bsr = "buf.build/bufbuild/buf"
+                    }
+                }
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withPluginClasspath()
+            .withArguments('generateProtos', '--stacktrace')
+            .forwardOutput()
+            .build()
+
+        then: "generated Java IS present (the default behaviour the prune contract is measured against)"
+        result.task(":generateProtos").outcome == TaskOutcome.SUCCESS
+        def generatedRoot = new File(testProjectDir, 'build/generated')
+        def javaFiles = []
+        if (generatedRoot.exists()) {
+            generatedRoot.eachFileRecurse { if (it.name.endsWith('.java')) javaFiles << it }
+        }
+        !javaFiles.isEmpty()
+    }
 }

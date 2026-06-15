@@ -11,6 +11,7 @@ import ai.pipestream.proto.tasks.PrepareGeneratorsTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.SourceSetContainer
 
 /**
@@ -223,6 +224,21 @@ class ProtoToolchainPlugin implements Plugin<Project> {
             }
         }
 
+        // Register pruneGeneratedSources task (descriptorOnly safety net).
+        // Deletes the generated-Java output AFTER the descriptor is built (and
+        // after any generateProtos that ran), so a descriptorOnly project can
+        // never leak generated types into compilation — even with
+        // generateMutiny/generateGrpc=true, or stale Java from a prior build.
+        // The descriptor set is built from the exported protos (exportDir), not
+        // from this Java, so pruning it never affects the descriptor.
+        def pruneGeneratedSourcesTask = project.tasks.register("pruneGeneratedSources", Delete) { task ->
+            task.group = "protobuf"
+            task.description = "descriptorOnly: deletes generated Java sources, keeping only the descriptor"
+            task.delete(outputDir)
+            task.dependsOn(buildDescriptorsTask)
+            task.mustRunAfter(generateTask)
+        }
+
         // Register cleanProtos task
         project.tasks.register("cleanProtos") { task ->
             task.group = "protobuf"
@@ -308,15 +324,8 @@ class ProtoToolchainPlugin implements Plugin<Project> {
 
         // Wire into Java compilation if Java plugin is applied
         project.plugins.withType(JavaPlugin).configureEach {
-            // Add generated sources to main source set
-            project.extensions.getByType(SourceSetContainer).named("main") { sourceSet ->
-                sourceSet.java.srcDir(outputDir)
-            }
-
-            // Ensure generateProtos runs before compileJava
+            // compileJava always needs the descriptor set (baked into resources).
             project.tasks.named("compileJava").configure { task ->
-                task.dependsOn(generateTask)
-                // Also build descriptors if enabled
                 task.dependsOn(buildDescriptorsTask)
             }
 
@@ -325,14 +334,44 @@ class ProtoToolchainPlugin implements Plugin<Project> {
                 task.dependsOn(copyDescriptorsToResourcesTask)
             }
 
-            // Also wire to sourcesJar if it exists
+            // The Java-codegen wiring (generated-source root + generateProtos) is
+            // decided in afterEvaluate so the descriptorOnly flag is fully
+            // configured. In descriptorOnly mode the project consumes its
+            // generated types from a published dependency; generating AND adding
+            // them as a source root here would duplicate classes on the classpath
+            // (split package / NoClassDefFoundError: ServiceType). Disabling the
+            // task by name is NOT enough — the generated-source dir stays a source
+            // root, so any stale/leaked Java there still compiles.
             project.afterEvaluate {
-                try {
-                    project.tasks.named("sourcesJar").configure { task ->
+                if (extension.descriptorOnly.getOrElse(false)) {
+                    // Keep ONLY the descriptor. outputDir is NOT a source root, and
+                    // pruneGeneratedSources deletes any generated Java AFTER the
+                    // descriptor is built (and after generateProtos, if it ran).
+                    // generateProtos is left enabled (it still honours
+                    // generateMutiny/generateGrpc) but is NOT wired into compileJava,
+                    // so a normal build skips it; if it does run, the prune removes
+                    // its output before compile. Net: no generated type can reach the
+                    // classpath here and collide with the published dependency's.
+                    project.tasks.named("compileJava").configure { task ->
+                        task.dependsOn(pruneGeneratedSourcesTask)
+                    }
+                    project.logger.lifecycle(
+                        "proto-toolchain: descriptorOnly=true — descriptor kept, " +
+                        "generated Java pruned, no generated-source root (types come from a dependency)")
+                } else {
+                    project.extensions.getByType(SourceSetContainer).named("main") { sourceSet ->
+                        sourceSet.java.srcDir(outputDir)
+                    }
+                    project.tasks.named("compileJava").configure { task ->
                         task.dependsOn(generateTask)
                     }
-                } catch (Exception ignored) {
-                    // Task doesn't exist, skip
+                    try {
+                        project.tasks.named("sourcesJar").configure { task ->
+                            task.dependsOn(generateTask)
+                        }
+                    } catch (Exception ignored) {
+                        // Task doesn't exist, skip
+                    }
                 }
             }
         }

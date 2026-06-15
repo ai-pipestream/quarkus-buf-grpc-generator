@@ -95,6 +95,7 @@ abstract class ProtoExtension {
         getBreakingArgs().convention([])
         getFormatArgs().convention([])
         getCopyDescriptorsToResources().convention(false)
+        getDescriptorOnly().convention(false)
         getTestBuildDir().convention(
             project.layout.buildDirectory.dir("resources/test/grpc")
         )
@@ -191,6 +192,25 @@ abstract class ProtoExtension {
      * <p>Default: <code>true</code></p>
      */
     abstract Property<Boolean> getGenerateDescriptors()
+
+    /**
+     * Descriptors-only mode: build the FileDescriptorSet (and fetch protos) but
+     * generate NO Java/gRPC/Mutiny code, and do NOT add the generated-source dir
+     * to the main source set.
+     *
+     * <p>Use this when a project consumes its generated proto types from a
+     * published dependency (e.g. a shared extension) and only needs the
+     * descriptor snapshot at runtime. Generating the same types locally would
+     * duplicate classes on the classpath (split package / {@code NoClassDefFoundError}).</p>
+     *
+     * <p>This is the robust replacement for ad-hoc {@code tasks.named('generateProtos'){enabled=false}}:
+     * disabling the task by name still leaves the generated-source dir wired as a
+     * source root, so any stale or leaked Java there gets compiled. {@code descriptorOnly}
+     * removes the source root and the codegen wiring entirely.</p>
+     *
+     * <p>Default: <code>false</code></p>
+     */
+    abstract Property<Boolean> getDescriptorOnly()
 
     /**
      * Path for the generated descriptor file.
