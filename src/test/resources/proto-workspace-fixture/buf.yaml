@@ -1,0 +1,10 @@
+# Minimal multi-module buf workspace used as a hermetic fixture for the
+# git-proto-workspace integration tests. Mirrors the shape of a real Pipestream
+# proto workspace (one module per top-level dir, each rooted at <module>/proto)
+# without depending on the private pipestream-protos repo or any remote BSR deps.
+version: v2
+modules:
+  - path: common/proto
+  - path: config/proto
+  - path: opensearch/proto
+  - path: schemamanager/proto

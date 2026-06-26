@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
  */
 class IntegrationTest extends Specification {
     @TempDir File testProjectDir
+    @TempDir File fixtureRepoDir
     File buildFile
     File settingsFile
 
@@ -642,6 +643,7 @@ class IntegrationTest extends Specification {
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
     def "git-proto-workspace mode checks out workspace from Git"() {
         given:
+        def repoUrl = localProtoWorkspaceUrl()
         buildFile << """
             plugins {
                 id 'ai.pipestream.proto-toolchain'
@@ -654,9 +656,9 @@ class IntegrationTest extends Specification {
 
             pipestreamProtos {
                 sourceMode = 'git-proto-workspace'
-                gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+                gitRepo = "${repoUrl}"
                 gitRef = "main"
-                
+
                 modules {
                     register("common")
                     register("config")
@@ -688,6 +690,7 @@ class IntegrationTest extends Specification {
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
     def "git-proto-workspace mode supports cross-module imports via single buf generate with --path filters"() {
         given:
+        def repoUrl = localProtoWorkspaceUrl()
         buildFile << """
             plugins {
                 id 'ai.pipestream.proto-toolchain'
@@ -700,9 +703,9 @@ class IntegrationTest extends Specification {
 
             pipestreamProtos {
                 sourceMode = 'git-proto-workspace'
-                gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+                gitRepo = "${repoUrl}"
                 gitRef = "main"
-                
+
                 modules {
                     register("opensearch")
                     register("schemamanager")
@@ -786,6 +789,7 @@ class IntegrationTest extends Specification {
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
     def "git-proto-workspace mode allows per-module gitSubdir override"() {
         given:
+        def repoUrl = localProtoWorkspaceUrl()
         buildFile << """
             plugins {
                 id 'ai.pipestream.proto-toolchain'
@@ -798,9 +802,9 @@ class IntegrationTest extends Specification {
 
             pipestreamProtos {
                 sourceMode = 'git-proto-workspace'
-                gitRepo = "https://github.com/ai-pipestream/pipestream-protos.git"
+                gitRepo = "${repoUrl}"
                 gitRef = "main"
-                
+
                 modules {
                     register("common") {
                         // gitSubdir defaults to module name, but can be overridden
@@ -829,5 +833,41 @@ class IntegrationTest extends Specification {
         
         def configDir = new File(exportDir, 'config')
         configDir.exists()
+    }
+
+    /**
+     * Materializes the checked-in multi-module buf workspace fixture into a throwaway
+     * local git repo and returns its {@code file://} URL, so git-proto-workspace mode
+     * can clone it without touching the network or the (private) pipestream-protos repo.
+     */
+    private String localProtoWorkspaceUrl() {
+        def fixture = new File(getClass().getResource('/proto-workspace-fixture').toURI())
+        fixture.eachFileRecurse { src ->
+            def rel = fixture.toPath().relativize(src.toPath()).toString()
+            def dest = new File(fixtureRepoDir, rel)
+            if (src.isDirectory()) {
+                dest.mkdirs()
+            } else {
+                dest.parentFile.mkdirs()
+                dest.bytes = src.bytes
+            }
+        }
+        gitInFixture('init', '-b', 'main')
+        gitInFixture('config', 'user.email', 'proto-toolchain-test@pipestream.ai')
+        gitInFixture('config', 'user.name', 'Proto Toolchain Test')
+        gitInFixture('add', '.')
+        gitInFixture('commit', '-m', 'proto workspace fixture')
+        return "file://${fixtureRepoDir.absolutePath}"
+    }
+
+    private void gitInFixture(String... args) {
+        def proc = new ProcessBuilder(['git'] + (args as List))
+            .directory(fixtureRepoDir)
+            .redirectErrorStream(true)
+            .start()
+        proc.waitFor()
+        if (proc.exitValue() != 0) {
+            throw new IllegalStateException("git ${args.join(' ')} failed:\n${proc.inputStream.text}")
+        }
     }
 }
