@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package ai.pipestream.config.v1;
+
+option java_multiple_files = true;
+option java_package = "ai.pipestream.config.v1";
+
+// Self-contained module (no cross-module imports) — used alongside common to
+// verify a two-module checkout + generate.
+message ConfigEntry {
+  string key = 1;
+  string value = 2;
+}

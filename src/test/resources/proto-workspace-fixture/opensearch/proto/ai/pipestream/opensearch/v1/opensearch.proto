@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ai.pipestream.opensearch.v1;
+
+import "ai/pipestream/common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "ai.pipestream.opensearch.v1";
+
+// Imports common — the cross-module import that the single `buf generate`
+// with --path filters must resolve across modules in the workspace.
+message OpenSearchDoc {
+  ai.pipestream.common.v1.CommonId id = 1;
+  string body = 2;
+}

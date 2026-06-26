@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ai.pipestream.schemamanager.v1;
+
+import "ai/pipestream/common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "ai.pipestream.schemamanager.v1";
+
+// Also imports common — a second importer so the cross-module test registers
+// three modules (opensearch, schemamanager, common) like the original.
+message SchemaRef {
+  ai.pipestream.common.v1.CommonId id = 1;
+  string schema = 2;
+}
