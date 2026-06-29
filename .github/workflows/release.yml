@@ -44,16 +44,14 @@ jobs:
       - name: Create Release Tag
         run: ./gradlew createRelease -Prelease.incrementer=${{ inputs.incrementer }} -Prelease.disableChecks
 
-      - name: Publish to Maven Central and GitHub Packages
+      - name: Publish to Maven Central
+        # Releases go to Central (GitHub Packages dropped — task removed with the build.gradle migration).
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew publishAllPublicationsToCentralPortal
-          ./gradlew publishAllPublicationsToGitHubPackagesRepository
+        run: ./gradlew publishAllPublicationsToCentralPortal
 
       - name: Push Release Tag
         run: |
