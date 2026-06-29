@@ -37,6 +37,7 @@ jobs:
 
       - name: Upload test results
         if: always()
+        continue-on-error: true   # Forgejo artifact backend may be unavailable; don't fail the build over it
         uses: actions/upload-artifact@v7
         with:
           name: test-results
