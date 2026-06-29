@@ -130,12 +130,16 @@ publishing {
 
     repositories {
         mavenLocal()
-        maven {
-            name = 'GitHubPackages'
-            url = uri('https://maven.pkg.github.com/ai-pipestream/quarkus-buf-grpc-generator')
-            credentials {
-                username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
-                password = findProperty('gpr.key') ?: System.getenv('GITHUB_TOKEN')
+        // Snapshots → Forgejo dev registry; hardened releases go to Maven Central (nmcp, below).
+        // In Forgejo Actions the injected GITHUB_TOKEN is a Forgejo token; locally set FORGEJO_TOKEN.
+        if (version.toString().endsWith('-SNAPSHOT')) {
+            maven {
+                name = 'Forgejo'
+                url = uri('https://git.rokkon.com/api/packages/ai-pipestream/maven')
+                credentials {
+                    username = System.getenv('FORGEJO_ACTOR') ?: System.getenv('GITHUB_ACTOR') ?: 'ci'
+                    password = System.getenv('FORGEJO_TOKEN') ?: System.getenv('GITHUB_TOKEN')
+                }
             }
         }
     }
