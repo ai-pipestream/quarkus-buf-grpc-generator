@@ -37,8 +37,9 @@ jobs:
 
       - name: Upload test results
         if: always()
-        continue-on-error: true   # Forgejo artifact backend may be unavailable; don't fail the build over it
-        uses: actions/upload-artifact@v7
+        continue-on-error: true   # belt-and-suspenders: never fail the build over artifacts
+        # Forgejo-native fork; v4+ of actions/upload-artifact is unsupported on Forgejo (GHES).
+        uses: https://code.forgejo.org/forgejo/upload-artifact@v3
         with:
           name: test-results
           path: build/reports/tests/
@@ -67,8 +68,8 @@ jobs:
 
       - name: Publish snapshots to Forgejo
         env:
-          # On Forgejo Actions the injected token is a Forgejo token with package:write,
-          # so resolution + publish to the Forgejo registry need no extra secret.
+          # The auto-injected Actions token CANNOT write the Forgejo package registry, so
+          # FORGEJO_TOKEN must be an org secret = a Forgejo PAT with write:package scope.
           FORGEJO_ACTOR: ${{ github.actor }}
-          FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew publishAllPublicationsToForgejoRepository --no-daemon --configuration-cache
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: ./gradlew publishAllPublicationsToForgejoRepository --no-daemon
