@@ -3,7 +3,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
     id 'signing'
-    id 'pl.allegro.tech.build.axion-release' version '1.21.2'
+    id 'pl.allegro.tech.build.axion-release' version '1.21.3'
     id 'com.gradleup.nmcp' version '1.6.1'
 }
 
