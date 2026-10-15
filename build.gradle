@@ -3,8 +3,8 @@ plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
     id 'signing'
-    id 'pl.allegro.tech.build.axion-release' version '1.21.3'
-    id 'com.gradleup.nmcp' version '1.6.1'
+    id 'pl.allegro.tech.build.axion-release' version '1.21.4'
+    id 'com.gradleup.nmcp' version '1.6.2'
 }
 
 // Axion-release configuration
@@ -38,13 +38,13 @@ dependencies {
 
     // JSON parsing for pipestream-protos.json
     // https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind
-    implementation 'tools.jackson.core:jackson-databind:3.2.2'
+    implementation 'tools.jackson.core:jackson-databind:3.2.3'
 
     // Testing
     testImplementation gradleTestKit()
     testImplementation platform('org.junit:junit-bom:6.1.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.spockframework:spock-core:2.4-groovy-4.0'
+    testImplementation 'org.spockframework:spock-core:2.5-groovy-4.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
